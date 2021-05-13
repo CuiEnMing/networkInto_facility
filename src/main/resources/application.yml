@@ -1,0 +1,12 @@
+#spring.application.name=nacos-provider
+# 服务名称
+#spring.cloud.nacos.discovery.service=test
+#spring.cloud.nacos.discovery.server-addr=127.0.0.1:8848
+#management.endpoints.web.exposure.include=*
+#spring.cloud.nacos.discovery=true
+server:
+  port: 8089
+
+parameter:
+  openQrCode："/api/cmd"
+
