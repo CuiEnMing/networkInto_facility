@@ -1,4 +1,4 @@
-package com.networkinto.facility.ahikVision.common;
+package com.networkinto.facility.common;
 
 
 import com.networkinto.facility.ajHua.utils.NetSDKLib;

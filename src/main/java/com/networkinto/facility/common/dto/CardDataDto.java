@@ -1,13 +1,19 @@
 package com.networkinto.facility.common.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
+ * 查询卡返回实体
+ *
  * @author cuiEnMing
  * @Desc
  * @data 2021/4/27 17:56
  */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class CardDataDto {
     /**
      * 卡号

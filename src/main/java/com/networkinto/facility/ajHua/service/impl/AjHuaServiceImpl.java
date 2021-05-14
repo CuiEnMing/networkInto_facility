@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.networkinto.facility.ajHua.module.AjHuaModule;
 import com.networkinto.facility.ajHua.service.AjHuaService;
-import com.networkinto.facility.ajHua.utils.ErrorCode;
 import com.networkinto.facility.ajHua.utils.JsonResult;
 import com.networkinto.facility.ajHua.utils.NetSDKLib;
 import com.networkinto.facility.ajHua.utils.ToolKits;
@@ -23,10 +22,7 @@ import lombok.extern.log4j.Log4j2;
 import org.eclipse.jetty.util.StringUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.multipart.MultipartFile;
-
 import javax.annotation.Resource;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoField;
@@ -35,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * @author cuiEnMing
  * @Desc 门禁设备用户管理 （卡号 ，图片）
@@ -54,7 +49,6 @@ public class AjHuaServiceImpl implements AjHuaService {
      */
     @Getter
     private final ConcurrentHashMap<String, byte[]> serialAndUserIDMap = new ConcurrentHashMap<>();
-
     /**
      * 验证二维码权限
      *
@@ -85,7 +79,6 @@ public class AjHuaServiceImpl implements AjHuaService {
         }
         return JsonResult.error(message, "", code);
     }
-
     /**
      * 关闭二维码穿透
      *
@@ -98,8 +91,6 @@ public class AjHuaServiceImpl implements AjHuaService {
         String url = facilityDto.getIp() + ":" + IConst.QR_CODE_URL;
         return restTemplate.postForObject(url, map, InterfaceReturnsDto.class);
     }
-
-
     /**
      * 设备登出
      *
@@ -121,25 +112,10 @@ public class AjHuaServiceImpl implements AjHuaService {
             return JsonResult.error("登出失败!", toolKits.getErrorCodePrint(), ajHuaModule.netsdk.CLIENT_GetLastError() & 0x7fffffff);
         }
     }
-
-    /**
-     * 新增
-     *
-     * @param file
-     * @param device
-     */
-    @Override
-    public List<Map<String, String>> addFace(List<MultipartFile> file, List<HumanFaceDto> device) {
-        List<Map<String, String>> list = new ArrayList<>();
-
-        return list;
-    }
-
     @Override
     public HumanFaceDto addPicture(byte[] fileBytes, String fileName, HumanFaceDto dto) {
         // 门禁卡记录集信息
         String uuID = UUID.randomUUID().toString().trim().replaceAll("-", "").substring(0, 10) + dto.getDeviceId();
-        log.info("获得uuid->{}", uuID);
         byte[] userID = uuID.getBytes();
         String cardId = dto.getCardNo().toString();
         byte[] cardNo = cardId.getBytes();
@@ -213,72 +189,6 @@ public class AjHuaServiceImpl implements AjHuaService {
         }
         serialAndUserIDMap.put(dto.getSerialNumber(), userID);
         return dto;
-    }
-
-    /**
-     * 卡信息修改
-     *
-     * @param cardDataDto
-     * @return boolean
-     */
-    @Override
-    public JsonResult<String> updateCard(CardDataDto cardDataDto) {
-        byte[] cardNo = String.valueOf(cardDataDto.getCardNo()).getBytes();
-        byte[] userID = cardDataDto.getUserId().getBytes();
-        String s = "";
-        try {
-            s = new String(cardNo, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        if (cardDataDto.getCardNo() > IConst.SUCCEED_CODE) {
-            //modify card
-            NetSDKLib.NET_RECORDSET_ACCESS_CTL_CARD card = new NetSDKLib.NET_RECORDSET_ACCESS_CTL_CARD();
-            NetSDKLib.NET_CTRL_RECORDSET_PARAM inParam = new NetSDKLib.NET_CTRL_RECORDSET_PARAM();
-            inParam.emType = NetSDKLib.EM_NET_RECORD_TYPE.NET_RECORD_ACCESSCTLCARD;
-            card.nDoorNum = 1;
-            card.sznDoors[0] = 0;
-            System.arraycopy(cardNo, 0, card.szCardNo, 0, cardNo.length);
-            System.arraycopy(userID, 0, card.szUserID, 0, userID.length);
-            inParam.pBuf = new Memory(card.size());
-            toolKits.SetStructDataToPointer(card, inParam.pBuf, 0);
-            Pointer pointer = new Memory(inParam.size());
-            toolKits.SetStructDataToPointer(inParam, pointer, 0);
-            boolean res = ajHuaModule.netsdk.CLIENT_ControlDevice(ajHuaModule.getHandleMap().get(cardDataDto.getSerialNumber()), NetSDKLib.CtrlType.CTRLTYPE_CTRL_RECORDSET_UPDATEEX, pointer, 10000);
-            if (!res) {
-                int nErrorNum = ajHuaModule.netsdk.CLIENT_GetLastError() & (0x7fffffff);
-                return JsonResult.error("修改卡信息失败", ErrorCode.getErrorCode(ajHuaModule.netsdk.CLIENT_GetLastError()), nErrorNum);
-            }
-        }
-        if (StringUtil.isNotBlank(cardDataDto.getImgUrl())) {
-            try {
-                byte[] bytes = IConst.imgConvert(cardDataDto.getImgUrl());
-                NetSDKLib.NET_IN_UPDATE_FACE_INFO inUpdateFaceInfo = new NetSDKLib.NET_IN_UPDATE_FACE_INFO();
-                System.arraycopy(userID, 0, inUpdateFaceInfo.szUserID, 0, userID.length);
-                inUpdateFaceInfo.stuFaceInfo.nFacePhoto = 1;
-                inUpdateFaceInfo.stuFaceInfo.nFacePhotoLen[0] = (int) new Memory(bytes.length).getSize();
-                //inUpdateFaceInfo.stuFaceInfo.pszFacePhotoArr[0].pszFacePhoto=memory;
-                inUpdateFaceInfo.stuFaceInfo.pszFacePhotoArr[0].pszFacePhoto = new Memory((int) new Memory(bytes.length).getSize());
-                inUpdateFaceInfo.stuFaceInfo.pszFacePhotoArr[0].pszFacePhoto.write(0, bytes, 0, (int) new Memory(bytes.length).getSize());
-                inUpdateFaceInfo.stuFaceInfo.nRoom = 1;
-                System.arraycopy(userID, 0, inUpdateFaceInfo.stuFaceInfo.szRoomNoArr[0].szRoomNo, 0, userID.length);
-
-                NetSDKLib.NET_OUT_UPDATE_FACE_INFO outUpdateFaceInfo = new NetSDKLib.NET_OUT_UPDATE_FACE_INFO();
-                Pointer inUpdateParam = new Memory(inUpdateFaceInfo.size());
-                toolKits.SetStructDataToPointer(inUpdateFaceInfo, inUpdateParam, 0);
-                Pointer outUpdateParam = new Memory(outUpdateFaceInfo.size());
-                toolKits.SetStructDataToPointer(outUpdateFaceInfo, outUpdateParam, 0);
-                boolean result = ajHuaModule.netsdk.CLIENT_FaceInfoOpreate(ajHuaModule.getHandleMap().get(cardDataDto.getSerialNumber()),
-                        NetSDKLib.EM_FACEINFO_OPREATE_TYPE.EM_FACEINFO_OPREATE_UPDATE, inUpdateParam, outUpdateParam, 5000);
-                if (!result) {
-                    return JsonResult.error("修改人脸失败", toolKits.getErrorCodeShow(), ajHuaModule.netsdk.CLIENT_GetLastError() & 0x7fffffff);
-
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        return JsonResult.ok("ok", "");
     }
 
     /**

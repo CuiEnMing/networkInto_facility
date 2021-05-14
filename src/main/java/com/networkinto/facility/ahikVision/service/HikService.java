@@ -1,6 +1,11 @@
 package com.networkinto.facility.ahikVision.service;
 
+import com.networkinto.facility.common.constant.JsonResult;
+import com.networkinto.facility.common.dto.CardDataDto;
+import com.networkinto.facility.common.dto.FacilityDto;
 import com.networkinto.facility.common.dto.HumanFaceDto;
+
+import java.util.List;
 
 /**
  * 海康设备管理
@@ -25,4 +30,20 @@ public interface HikService {
      * @return HumanFaceDto
      */
     HumanFaceDto addPicture(byte[] bytes, HumanFaceDto faceDto);
+
+    /**
+     * 设备卡查询
+     *
+     * @param facilityDto
+     * @return HumanFaceDto
+     */
+    List<CardDataDto> queryCard(FacilityDto facilityDto);
+
+    /**
+     * 设备卡删除
+     *
+     * @param cardDataDto
+     * @return s
+     */
+    String deleteCard(CardDataDto cardDataDto);
 }

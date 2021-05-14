@@ -16,15 +16,6 @@ import java.util.Map;
  */
 public interface AjHuaService {
     /**
-     * add Face
-     *
-     * @param file
-     * @param device
-     * @return
-     */
-    List<Map<String, String>> addFace(List<MultipartFile> file, List<HumanFaceDto> device);
-
-    /**
      * 验证二维码权限
      *
      * @param qrCode 二维码
@@ -65,14 +56,6 @@ public interface AjHuaService {
      * @return boolean
      */
     HumanFaceDto addPicture(byte[] fileBytes, String fileName, HumanFaceDto dto);
-
-    /**
-     * 卡信息修改
-     *
-     * @param cardDataDto
-     * @return boolean
-     */
-    JsonResult<String> updateCard(CardDataDto cardDataDto);
 
     /**
      * 卡信息删除

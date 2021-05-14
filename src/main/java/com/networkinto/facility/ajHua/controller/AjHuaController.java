@@ -21,25 +21,10 @@ import java.util.Map;
  */
 @Log4j2
 @RestController
-@RequestMapping("/device/manage")
+@RequestMapping("/aj/hua")
 public class AjHuaController {
     @Resource
     private AjHuaService ajHuaService;
-
-    /**
-     * @param file 图片
-     * @return JsonResult
-     * @author cuiEnMing
-     */
-    @PostMapping
-    private JsonResult<List<Map<String, String>>> insertUser(@RequestBody() List<MultipartFile> file, @RequestBody List<HumanFaceDto> humanFaceDtos) {
-        List<Map<String, String>> maps = ajHuaService.addFace(file, humanFaceDtos);
-        if (!maps.isEmpty()) {
-            return JsonResult.ok("存在下发失败数据 详情查看data", maps);
-        }
-        return JsonResult.okNoData("人脸下发成功");
-    }
-
     /**
      * @return JsonResult
      * @Description 查询卡信息
@@ -50,18 +35,6 @@ public class AjHuaController {
     private List<CardDataDto> queryCard(@RequestParam String serialNumber) {
         return ajHuaService.queryCard(serialNumber);
     }
-
-    /**
-     * @return JsonResult
-     * @Description 修改卡信息
-     * @params deviceDto 设备
-     * @author cuiEnMing
-     */
-    @PutMapping("/update/card")
-    private JsonResult<String> updateCard(@RequestBody CardDataDto cardDataDto) {
-        return ajHuaService.updateCard(cardDataDto);
-    }
-
     /**
      * @return JsonResult
      * @Description 删除卡信息

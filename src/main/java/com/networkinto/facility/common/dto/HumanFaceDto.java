@@ -73,5 +73,5 @@ public class HumanFaceDto {
     /**
      * 下发失败次数
      */
-    private Long noNum;
+    private int noNum;
 }

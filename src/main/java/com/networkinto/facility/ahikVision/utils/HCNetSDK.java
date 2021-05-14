@@ -5893,10 +5893,36 @@ DVR实现巡航数据结构
         public byte byRealTimeContrast;//是否实时报警 0-实时 1-非实时
         public Pointer pBuffer1;  //黑名单人脸子图的图片数据
     }
-
+    public static class NET_VCA_BLOCKLIST_INFO extends Structure {
+        public int dwSize;   //结构大小
+        public int dwRegisterID;  //名单注册ID号（只读）
+        public int dwGroupNo; //分组号
+        public byte byType;
+        public byte byLevel;
+        public byte[] byRes1 = new byte[2];  //保留
+        public NET_VCA_HUMAN_ATTRIBUTE struAttribute = new NET_VCA_HUMAN_ATTRIBUTE();  //人员信息
+        public byte[] byRemark = new byte[NAME_LEN]; //备注信息
+        public int dwFDDescriptionLen;//人脸库描述数据长度
+        public Pointer pFDDescriptionBuffer;//人脸库描述数据指针
+        public int dwFCAdditionInfoLen;//抓拍库附加信息长度
+        public Pointer pFCAdditionInfoBuffer;//抓拍库附加信息数据指针（FCAdditionInfo中包含相机PTZ坐标）
+        public byte[] byRes2 = new byte[4];
+    }
+    public static class NET_VCA_BLOCKLIST_INFO_ALARM extends Structure {
+        public NET_VCA_BLOCKLIST_INFO struBlockListInfo  = new NET_VCA_BLOCKLIST_INFO();
+        public int dwBlockListPicLen;
+        public int dwFDIDLen;// 人脸库ID长度
+        public Pointer pFDID;  //人脸库Id指针
+        public int dwPIDLen;// 人脸库图片ID长度
+        public Pointer pPID;  //人脸库图片ID指针
+        public short wThresholdValue; //人脸库阈值[0,100]
+        public byte[] byRes = new byte[2];              // 保留字节
+        public Pointer pBuffer1;
+    }
 
     //黑名单比对结果报警上传
     public static class NET_VCA_FACESNAP_MATCH_ALARM extends Structure {
+        public NET_VCA_BLOCKLIST_INFO_ALARM struBlockListInfo = new NET_VCA_BLOCKLIST_INFO_ALARM();
         public int dwSize;             // 结构大小
         public float fSimilarity; //相似度，[0.001,1]
         public NET_VCA_FACESNAP_INFO_ALARM  struSnapInfo = new NET_VCA_FACESNAP_INFO_ALARM(); //抓拍信息

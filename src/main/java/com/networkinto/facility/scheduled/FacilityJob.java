@@ -1,4 +1,6 @@
 package com.networkinto.facility.scheduled;
+
+import com.alibaba.fastjson.JSON;
 import com.networkinto.facility.ahikVision.service.HikService;
 import com.networkinto.facility.ajHua.service.AjHuaService;
 import com.networkinto.facility.common.constant.IConst;
@@ -11,18 +13,20 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 /**
  * @author cuiEnMing
  * @Desc 定时任务
  */
 @Log4j2
-//@Component
-//@EnableScheduling
+@Component
+@EnableScheduling
 public class FacilityJob {
     @Resource
     private RestTemplate restTemplate;
@@ -30,13 +34,14 @@ public class FacilityJob {
     private AjHuaService ajHuaService;
     @Resource
     private HikService hikService;
+
     /**
      * 人脸下发
      */
-   // @Scheduled(cron = "*/5 * * * * ?")
+    @Scheduled(cron = "0 */1 * * * ?")
     private void humanFace() {
         //过滤注册失败的设备 不做该设备下发
-        List<String> failDevice = new ArrayList<>();
+        List<String> failDevice =  IConst.failDevice;;
         //返回数据下发结果
         List<HumanFaceDto> faceResult = new ArrayList<>();
         ParameterizedTypeReference<List<HumanFaceDto>> type = new ParameterizedTypeReference<List<HumanFaceDto>>() {
@@ -95,6 +100,8 @@ public class FacilityJob {
             }
         }
         if (faceResult.size() > IConst.SUCCEED_CODE) {
+            Object o = JSON.toJSON(faceResult);
+            log.info(o);
             restTemplate.postForEntity(IConst.FACE_RESULT, faceResult, String.class);
         }
     }

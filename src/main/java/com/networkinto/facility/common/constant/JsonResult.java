@@ -1,4 +1,4 @@
-package com.networkinto.facility.ahikVision.common;
+package com.networkinto.facility.common.constant;
 
 import lombok.Data;
 
