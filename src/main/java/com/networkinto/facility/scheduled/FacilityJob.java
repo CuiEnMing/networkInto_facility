@@ -21,8 +21,8 @@ import java.util.stream.Collectors;
  * @Desc 定时任务
  */
 @Log4j2
-@Component
-@EnableScheduling
+//@Component
+//@EnableScheduling
 public class FacilityJob {
     @Resource
     private RestTemplate restTemplate;
@@ -33,7 +33,7 @@ public class FacilityJob {
     /**
      * 人脸下发
      */
-    @Scheduled(cron = "*/5 * * * * ?")
+   // @Scheduled(cron = "*/5 * * * * ?")
     private void humanFace() {
         //过滤注册失败的设备 不做该设备下发
         List<String> failDevice = new ArrayList<>();

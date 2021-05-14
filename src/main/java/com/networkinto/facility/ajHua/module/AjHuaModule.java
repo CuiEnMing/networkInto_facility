@@ -114,9 +114,6 @@ public class AjHuaModule {
         pstInParam.szPassword = password.getBytes();
         pstInParam.szUserName = user.getBytes();
         //出参
-        if (ip.equals("172.16.11.240")){
-            System.out.println("ssssss");
-        }
         NetSDKLib.NET_OUT_LOGIN_WITH_HIGHLEVEL_SECURITY pstOutParam = new NetSDKLib.NET_OUT_LOGIN_WITH_HIGHLEVEL_SECURITY();
         pstOutParam.stuDeviceInfo = deviceInfoEx;
         m_hLoginHandle = netsdk.CLIENT_LoginWithHighLevelSecurity(pstInParam, pstOutParam);

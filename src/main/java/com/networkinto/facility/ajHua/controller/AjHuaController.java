@@ -22,7 +22,7 @@ import java.util.Map;
 @Log4j2
 @RestController
 @RequestMapping("/device/manage")
-public class DeviceManageController {
+public class AjHuaController {
     @Resource
     private AjHuaService ajHuaService;
 

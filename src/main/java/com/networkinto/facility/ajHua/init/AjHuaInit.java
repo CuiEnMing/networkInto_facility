@@ -61,16 +61,15 @@ public class AjHuaInit  implements CommandLineRunner {
                     && StringUtil.isNotBlank(deviceDto.getPassword()) && StringUtil.isNotBlank(deviceDto.getIp())
                     && (deviceDto.getPort() > 0)) {
                 //开启线程池
-                if (deviceDto.getIp().equals("172.16.11.240")){
-                    System.out.println("ssssss");
-                }
                 Runnable loginRunnable = () -> {
+
                     //登录设备
                     if (!ajHuaModule.login(deviceDto.getIp(), deviceDto.getPort(), deviceDto.getAccount(), deviceDto.getPassword(), deviceDto.getSerialNumber())) {
-                        List<String> failDevice = IConst.failDevice ;
+                        List<String> failDevice = IConst.failDevice;
                         if (!failDevice.contains(deviceDto.getIp())) {
-                            IConst.failDevice .add(deviceDto.getIp());
+                            IConst.failDevice.add(deviceDto.getIp());
                         }
+
                         //.add(deviceDto.getIp());
                         log.error("设备登录失败 ip->{}，端口->{},用户名->{},密码->{}", deviceDto.getIp(), deviceDto.getPort(),
                                 deviceDto.getAccount(), deviceDto.getPassword());
@@ -86,9 +85,8 @@ public class AjHuaInit  implements CommandLineRunner {
                                 faceCallBack, deviceDto);
                     }
                 };
+                    ThreadPoolUtil.newAjCachedThreadPool().submit(loginRunnable);
                 //提交线程
-                ThreadPoolUtil.newAjCachedThreadPool().submit(loginRunnable);
-
             } else {
                 List<String> failDevice = IConst.failDevice ;
                 if (!failDevice.contains(deviceDto.getIp())) {
