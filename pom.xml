@@ -23,6 +23,14 @@
             <artifactId>jna</artifactId>
             <version>3.0.9</version>
         </dependency>
+        <!-- 加载lib目录下的opencv包，java调用dll的桥梁包 -->
+        <dependency>
+            <groupId>org.opencv</groupId>
+            <artifactId>opencv</artifactId>
+            <version>4.0.1</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/opencv-401.jar</systemPath>
+        </dependency>
         <!-- jna -->
         <dependency>
             <groupId>com.sun.jna.examples</groupId>
@@ -137,6 +145,22 @@
             <version>1.18.16</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger2</artifactId>
+            <version>2.4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger-ui</artifactId>
+            <version>2.4.0</version>
+        </dependency>
+        <!-- 验证器 -->
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>6.1.5.Final</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -146,6 +170,14 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>lib</directory>
+                <targetPath>/BOOT-INF/lib/</targetPath>
+                <includes>
+                    <include>**/*.jar</include>
+                </includes>
+            </resource>
+        </resources>
     </build>
-
 </project>

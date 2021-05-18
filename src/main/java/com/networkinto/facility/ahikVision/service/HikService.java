@@ -1,6 +1,5 @@
 package com.networkinto.facility.ahikVision.service;
 
-import com.networkinto.facility.common.constant.JsonResult;
 import com.networkinto.facility.common.dto.CardDataDto;
 import com.networkinto.facility.common.dto.FacilityDto;
 import com.networkinto.facility.common.dto.HumanFaceDto;

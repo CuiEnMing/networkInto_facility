@@ -20,6 +20,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -31,7 +37,7 @@ import java.util.List;
 @Log4j2
 @Component
 @Order(value = 1)
-public class AjHuaInit  implements CommandLineRunner {
+public class AjHuaInit implements CommandLineRunner {
     @Resource
     private RestTemplate restTemplate;
     @Resource
@@ -51,7 +57,7 @@ public class AjHuaInit  implements CommandLineRunner {
         }
         ParameterizedTypeReference<List<FacilityDto>> type = new ParameterizedTypeReference<List<FacilityDto>>() {
         };
-        ResponseEntity<List<FacilityDto>> responseEntity = restTemplate.exchange(IConst.AJ_HUA_DEVICE , HttpMethod.GET, null, type);
+        ResponseEntity<List<FacilityDto>> responseEntity = restTemplate.exchange(IConst.AJ_HUA_DEVICE, HttpMethod.GET, null, type);
         List<FacilityDto> list = responseEntity.getBody();
         for (FacilityDto deviceDto : list) {
             if (deviceDto.getDeviceType() != IConst.SUCCEED_CODE) {
@@ -74,38 +80,36 @@ public class AjHuaInit  implements CommandLineRunner {
                         log.error("设备登录失败 ip->{}，端口->{},用户名->{},密码->{}", deviceDto.getIp(), deviceDto.getPort(),
                                 deviceDto.getAccount(), deviceDto.getPassword());
                     } else {
-                        /**
-                         *二维码穿透
-                         * */
+                        //二维码穿透
                         ajHuaModule.qrCode(deviceDto);
-                        /**
-                         * 人脸订阅
-                         * */
+                        //人脸回调
                         ajHuaModule.realLoadPicture(0,
                                 faceCallBack, deviceDto);
+
                     }
                 };
-                    ThreadPoolUtil.newAjCachedThreadPool().submit(loginRunnable);
+                ThreadPoolUtil.newAjCachedThreadPool().submit(loginRunnable);
                 //提交线程
             } else {
-                List<String> failDevice = IConst.failDevice ;
+                List<String> failDevice = IConst.failDevice;
                 if (!failDevice.contains(deviceDto.getIp())) {
-                    IConst.failDevice .add(deviceDto.getIp());
+                    IConst.failDevice.add(deviceDto.getIp());
                 }
                 log.warn("设备基础信息异常：->" + deviceDto);
             }
         }
 
     }
+
     /**
      * 设备断线回调: 通过 CLIENT_Init 设置该回调函数，当设备出现断线时，SDK会调用该函数
      */
     private class DisConnect implements NetSDKLib.fDisConnect {
         @Override
         public void invoke(NetSDKLib.LLong m_hLoginHandle, String pchDVRIP, int nDVRPort, Pointer dwUser) {
-            List<String> failDevice =  IConst.failDevice;
+            List<String> failDevice = IConst.failDevice;
             if (!failDevice.contains(pchDVRIP)) {
-                IConst.failDevice .add(pchDVRIP);
+                IConst.failDevice.add(pchDVRIP);
             }
             //todo  断线提示
             log.info("Device[%s] Port[%d] DisConnect!\n", pchDVRIP, nDVRPort);
@@ -120,9 +124,9 @@ public class AjHuaInit  implements CommandLineRunner {
         public void invoke(NetSDKLib.LLong m_hLoginHandle, String pchDVRIP, int nDVRPort, Pointer dwUser) {
             //todo 重连提示
             log.info("ReConnect Device[%s] Port[%d]\n", pchDVRIP, nDVRPort);
-            List<String> failDevice = IConst.failDevice ;
+            List<String> failDevice = IConst.failDevice;
             if (failDevice.contains(pchDVRIP)) {
-                IConst.failDevice .remove(pchDVRIP);
+                IConst.failDevice.remove(pchDVRIP);
             }
         }
     }
@@ -144,13 +148,21 @@ public class AjHuaInit  implements CommandLineRunner {
                     toolKits.GetPointerData(pAlarmInfo, event);
                     FaceInfoDto accessEvent = new FaceInfoDto();
                     accessEvent.szCardName = new String(event.szCardName).trim();
-                    //10位以后是设备id (userId 是10位uuid+设备id生成的)
-                    accessEvent.userId = new String(event.szUserID).trim().substring(10);
+                    accessEvent.userId = new String(event.szUserID).trim();
                     accessEvent.cardNo = new String(event.szCardNo).trim();
+                    //err
                     accessEvent.eventTime = event.UTC.toStringTime();
                     accessEvent.openDoorMethod = event.emOpenMethod;
-                    //  NetSDKLib.NET_ACCESS_DOOROPEN_METHOD ;  //开门方式
+                    int nErrorCode = event.nErrorCode;
+                    int bStatus = event.bStatus;
+                    NetSDKLib.DEV_ACCESS_CTL_IMAGE_INFO[] stuImageInfo = event.stuImageInfo;
                     log.info(accessEvent.toString());
+                    // 耗时800ms左右
+                    NetSDKLib.DEV_EVENT_FACEDETECT_INFO msg = new NetSDKLib.DEV_EVENT_FACEDETECT_INFO();
+
+                    // 耗时20ms左右
+                    toolKits.GetPointerData(pAlarmInfo, msg);
+                    ajHuaModule.saveFaceDetectPic(pBuffer, dwBufSize, msg);
                     break;
                 default:
                     break;

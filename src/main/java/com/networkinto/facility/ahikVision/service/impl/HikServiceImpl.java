@@ -3,7 +3,6 @@ package com.networkinto.facility.ahikVision.service.impl;
 import com.networkinto.facility.ahikVision.module.HikVisionModule;
 import com.networkinto.facility.ahikVision.service.HikService;
 import com.networkinto.facility.ahikVision.utils.HCNetSDK;
-import com.networkinto.facility.common.constant.JsonResult;
 import com.networkinto.facility.common.dto.CardDataDto;
 import com.networkinto.facility.common.dto.FacilityDto;
 import com.networkinto.facility.common.dto.HumanFaceDto;
@@ -31,7 +30,7 @@ public class HikServiceImpl implements HikService {
     private HikVisionModule hikVisionModule;
 
     /**
-     * 人脸下发
+     * 卡下发
      *
      * @param faceDto
      * @return HumanFaceDto
@@ -54,6 +53,7 @@ public class HikServiceImpl implements HikService {
         if (hikVisionModule.cardHandle == -1) {
             log.error("建立下发卡长连接失败，错误码为" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
             faceDto.setNoNum(faceDto.getNoNum() + 1);
+            faceDto.setCardStatus(-1);
             faceDto.setDfaceStatus(-1);
             if (StringUtil.isNotBlank(faceDto.getFailRemark())) {
                 faceDto.setFailRemark(faceDto.getFailRemark() + "," + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
@@ -133,7 +133,7 @@ public class HikServiceImpl implements HikService {
                 } else {
                     faceDto.setFailRemark("" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
                 }
-                return faceDto;
+                break;
             } else if (hikVisionModule.cardState == HCNetSDK.NET_SDK_CONFIG_STATUS_NEEDWAIT) {
                 try {
                     Thread.sleep(10);
@@ -144,13 +144,14 @@ public class HikServiceImpl implements HikService {
             } else if (hikVisionModule.cardState == HCNetSDK.NET_SDK_CONFIG_STATUS_FAILED) {
                 log.error("下发卡失败, 卡号: " + new String(struCardStatus.byCardNo).trim() + ", 错误码：" + struCardStatus.dwErrorCode);
                 faceDto.setNoNum(faceDto.getNoNum() + 1);
+
                 faceDto.setDfaceStatus(-1);
                 if (StringUtil.isNotBlank(faceDto.getFailRemark())) {
                     faceDto.setFailRemark(faceDto.getFailRemark() + "," + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
                 } else {
                     faceDto.setFailRemark("" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
                 }
-                return faceDto;
+                break;
             } else if (hikVisionModule.cardState == HCNetSDK.NET_SDK_CONFIG_STATUS_EXCEPTION) {
                 log.error("下发卡异常, 卡号: " + new String(struCardStatus.byCardNo).trim() + ", 错误码：" + struCardStatus.dwErrorCode);
                 faceDto.setNoNum(faceDto.getNoNum() + 1);
@@ -160,7 +161,7 @@ public class HikServiceImpl implements HikService {
                 } else {
                     faceDto.setFailRemark("" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
                 }
-                return faceDto;
+                break;
             } else if (hikVisionModule.cardState == HCNetSDK.NET_SDK_CONFIG_STATUS_SUCCESS) {
                 if (struCardStatus.dwErrorCode != 0) {
                     log.error("下发卡成功,但是错误码" + struCardStatus.dwErrorCode + ", 卡号：" + new String(struCardStatus.byCardNo).trim());
@@ -171,21 +172,14 @@ public class HikServiceImpl implements HikService {
                     } else {
                         faceDto.setFailRemark("" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
                     }
-                    return faceDto;
+                    break;
                 } else {
+                    faceDto.setCardStatus(1);
                     log.info("下发卡成功, 卡号: " + new String(struCardStatus.byCardNo).trim() + ", 状态：" + struCardStatus.byStatus);
                 }
-                IntByReference intByReference = new IntByReference(struCardStatus.dwErrorCode);
-                faceDto.setNoNum(faceDto.getNoNum() + 1);
-                faceDto.setDfaceStatus(-1);
-                if (StringUtil.isNotBlank(faceDto.getFailRemark())) {
-                    faceDto.setFailRemark(faceDto.getFailRemark() + "," + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
-                } else {
-                    faceDto.setFailRemark("" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
-                }
-                return faceDto;
             } else if (hikVisionModule.cardState == HCNetSDK.NET_SDK_CONFIG_STATUS_FINISH) {
                 log.info("下发卡完成 , 卡号: " + new String(struCardStatus.byCardNo).trim());
+                faceDto.setCardStatus(1);
                 break;
             }
         }
@@ -193,20 +187,7 @@ public class HikServiceImpl implements HikService {
         intByReference.setValue(struCardStatus.dwErrorCode);
         if (!hikVisionModule.hCNetSDK.NET_DVR_StopRemoteConfig(hikVisionModule.cardHandle)) {
             log.error("NET_DVR_StopRemoteConfig接口调用失败，错误码：" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
-            faceDto.setCardStatus(-1);
-            faceDto.setNoNum(faceDto.getNoNum() + 1);
-            faceDto.setDfaceStatus(-1);
-            if (StringUtil.isNotBlank(faceDto.getFailRemark())) {
-                faceDto.setFailRemark(faceDto.getFailRemark() + "," + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
-            } else {
-                faceDto.setFailRemark("" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
-            }
-            return faceDto;
         }
-        if (!hikVisionModule.hCNetSDK.NET_DVR_StopRemoteConfig(hikVisionModule.faceHandle)) {
-            log.error("NET_DVR_StopRemoteConfig接口调用失败，错误码：" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
-        }
-        faceDto.setCardStatus(1);
         return faceDto;
     }
 
@@ -276,7 +257,7 @@ public class HikServiceImpl implements HikService {
                 } else {
                     faceDto.setFailRemark("" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
                 }
-                return faceDto;
+                break;
             } else if (hikVisionModule.faceState == HCNetSDK.NET_SDK_CONFIG_STATUS_NEEDWAIT) {
                 try {
                     Thread.sleep(10);
@@ -293,7 +274,7 @@ public class HikServiceImpl implements HikService {
                 } else {
                     faceDto.setFailRemark("" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
                 }
-                return faceDto;
+                break;
             } else if (hikVisionModule.faceState == HCNetSDK.NET_SDK_CONFIG_STATUS_EXCEPTION) {
                 log.error("下发卡异常, 卡号: " + new String(struFaceStatus.byCardNo).trim() + ", 错误码：" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
                 faceDto.setNoNum(faceDto.getNoNum() + 1);
@@ -303,7 +284,7 @@ public class HikServiceImpl implements HikService {
                 } else {
                     faceDto.setFailRemark("" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
                 }
-                return faceDto;
+                break;
             } else if (hikVisionModule.faceState == HCNetSDK.NET_SDK_CONFIG_STATUS_SUCCESS) {
                 if (struFaceStatus.byRecvStatus != 1) {
                     log.error("下发卡失败，人脸读卡器状态" + struFaceStatus.byRecvStatus + ", 卡号：" + new String(struFaceStatus.byCardNo).trim());
@@ -318,31 +299,29 @@ public class HikServiceImpl implements HikService {
                     } else {
                         faceDto.setFailRemark("读卡器状态" + struFaceStatus.byRecvStatus);
                     }
-                    return faceDto;
+                    break;
                 } else {
+                    faceDto.setDfaceStatus(1);
                     log.info("下发卡成功, 卡号: " + new String(struFaceStatus.byCardNo).trim() + ", 状态：" + struFaceStatus.byRecvStatus);
                 }
-                IntByReference intByReference = new IntByReference(struFaceStatus.byRecvStatus);
-                faceDto.setNoNum(faceDto.getNoNum() + 1);
-                faceDto.setDfaceStatus(-1);
-                if (StringUtil.isNotBlank(faceDto.getFailRemark())) {
-                    faceDto.setFailRemark(faceDto.getFailRemark() + "," + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
-                } else {
-                    faceDto.setFailRemark("" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
-                }
-                return faceDto;
             } else if (hikVisionModule.faceState == HCNetSDK.NET_SDK_CONFIG_STATUS_FINISH) {
+                faceDto.setDfaceStatus(1);
                 log.info("下发人脸完成, 卡号: " + new String(struFaceStatus.byCardNo).trim());
                 break;
             } else {
                 hikVisionModule.faceState = hikVisionModule.hCNetSDK.NET_DVR_GetLastError();
+                faceDto.setNoNum(faceDto.getNoNum() + 1);
+                faceDto.setDfaceStatus(-1);
+                if (StringUtil.isNotBlank(faceDto.getFailRemark())) {
+                    faceDto.setFailRemark(faceDto.getFailRemark() + ",下发失败" + hikVisionModule.faceState);
+                } else {
+                    faceDto.setFailRemark("下发失败" + hikVisionModule.faceState);
+                }
             }
-
         }
         if (!hikVisionModule.hCNetSDK.NET_DVR_StopRemoteConfig(hikVisionModule.faceHandle)) {
             log.error("NET_DVR_StopRemoteConfig接口调用失败，错误码：" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
         }
-        faceDto.setDfaceStatus(1);
         return faceDto;
     }
 
@@ -413,10 +392,6 @@ public class HikServiceImpl implements HikService {
                     System.out.println("获取卡参数成功, 卡号: " + new String(cardRecord.byCardNo).trim()
                             + ", 卡类型：" + cardRecord.byCardType
                             + ", 姓名：" + strName);
-
-                    /*CardDataDto cardDataDto = new CardDataDto(Integer.parseInt(new String(cardRecord.byCardNo).trim()),
-
-                            );*/
                 } catch (UnsupportedEncodingException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -434,6 +409,7 @@ public class HikServiceImpl implements HikService {
         }
         return list;
     }
+
     /**
      * 设备卡删除
      *
@@ -517,5 +493,131 @@ public class HikServiceImpl implements HikService {
             System.out.println("NET_DVR_StopRemoteConfig接口成功");
         }
         return null;
+    }
+
+    /**
+     * 删除人脸
+     *
+     * @param cardNo
+     */
+    public void delOneFace(String cardNo, String serialNumber) {
+        HCNetSDK.NET_DVR_FACE_PARAM_CTRL struFaceDelCond = new HCNetSDK.NET_DVR_FACE_PARAM_CTRL();
+        struFaceDelCond.dwSize = struFaceDelCond.size();
+        //删除方式：0- 按卡号方式删除，1- 按读卡器删除
+        struFaceDelCond.byMode = 0;
+
+        struFaceDelCond.struProcessMode.setType(HCNetSDK.NET_DVR_FACE_PARAM_BYCARD.class);
+
+        //需要删除人脸关联的卡号
+        for (int i = 0; i < HCNetSDK.ACS_CARD_NO_LEN; i++) {
+            struFaceDelCond.struProcessMode.struByCard.byCardNo[i] = 0;
+        }
+        System.arraycopy(cardNo.getBytes(), 0, struFaceDelCond.struProcessMode.struByCard.byCardNo, 0, cardNo.length());
+        //读卡器
+        struFaceDelCond.struProcessMode.struByCard.byEnableCardReader[0] = 1;
+        //人脸id
+        struFaceDelCond.struProcessMode.struByCard.byFaceID[0] = 1;
+        struFaceDelCond.write();
+
+        Pointer ptrFaceDelCond = struFaceDelCond.getPointer();
+        Integer login = null;
+        try {
+            login = hikVisionModule.getUserHandleMap().get(serialNumber);
+        } catch (NullPointerException e) {
+            log.error("设备序列号为空->；" + serialNumber);
+            e.printStackTrace();
+        }
+        boolean bRet = hikVisionModule.hCNetSDK.NET_DVR_RemoteControl(login, HCNetSDK.NET_DVR_DEL_FACE_PARAM_CFG, ptrFaceDelCond, struFaceDelCond.size());
+        if (!bRet) {
+            System.out.println("删除人脸失败，错误码为" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
+            return;
+        } else {
+            System.out.println("删除人脸成功！");
+        }
+    }
+
+    /**
+     * 查询单张卡
+     *
+     * @param strCardNo
+     * @param serialNumber
+     */
+    public boolean getOneCard(String strCardNo, String serialNumber) {
+        boolean tag = false;
+        HCNetSDK.NET_DVR_CARD_COND struCardCond = new HCNetSDK.NET_DVR_CARD_COND();
+        struCardCond.read();
+        struCardCond.dwSize = struCardCond.size();
+        //查询一个卡参数
+        struCardCond.dwCardNum = 1;
+        struCardCond.write();
+        Pointer ptrStruCond = struCardCond.getPointer();
+        Integer login = null;
+        try {
+            login = hikVisionModule.getUserHandleMap().get(serialNumber);
+        } catch (NullPointerException e) {
+            log.error("设备序列号为空->；" + serialNumber);
+            e.printStackTrace();
+        }
+        hikVisionModule.cardHandle = hikVisionModule.hCNetSDK.NET_DVR_StartRemoteConfig(login, HCNetSDK.NET_DVR_GET_CARD, ptrStruCond, struCardCond.size(), null, null);
+        if (hikVisionModule.cardHandle == -1) {
+            System.out.println("建立查询卡参数长连接失败，错误码为" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
+        } else {
+            System.out.println("建立查询卡参数长连接成功！");
+        }
+
+        //查找指定卡号的参数，需要下发查找的卡号条件
+        HCNetSDK.NET_DVR_CARD_SEND_DATA struCardNo = new HCNetSDK.NET_DVR_CARD_SEND_DATA();
+        struCardNo.read();
+        struCardNo.dwSize = struCardNo.size();
+
+        for (int i = 0; i < HCNetSDK.ACS_CARD_NO_LEN; i++) {
+            struCardNo.byCardNo[i] = 0;
+        }
+        for (int i = 0; i < strCardNo.length(); i++) {
+            struCardNo.byCardNo[i] = strCardNo.getBytes()[i];
+        }
+        struCardNo.write();
+        HCNetSDK.NET_DVR_CARD_RECORD struCardRecord = new HCNetSDK.NET_DVR_CARD_RECORD();
+        struCardRecord.read();
+        IntByReference pInt = new IntByReference(0);
+        while (true) {
+            hikVisionModule.cardState = hikVisionModule.hCNetSDK.NET_DVR_SendWithRecvRemoteConfig(hikVisionModule.cardHandle, struCardNo.getPointer(), struCardNo.size(),
+                    struCardRecord.getPointer(), struCardRecord.size(), pInt);
+            struCardRecord.read();
+            if (hikVisionModule.cardState == -1) {
+                System.out.println("NET_DVR_SendWithRecvRemoteConfig查询卡参数调用失败，错误码：" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
+                break;
+            } else if (hikVisionModule.cardState == HCNetSDK.NET_SDK_CONFIG_STATUS_NEEDWAIT) {
+                System.out.println("配置等待");
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                continue;
+            } else if (hikVisionModule.cardState == HCNetSDK.NET_SDK_CONFIG_STATUS_FAILED) {
+                System.out.println("获取卡参数失败, 卡号: " + strCardNo);
+                break;
+            } else if (hikVisionModule.cardState == HCNetSDK.NET_SDK_CONFIG_STATUS_EXCEPTION) {
+                System.out.println("获取卡参数异常, 卡号: " + strCardNo);
+                break;
+            } else if (hikVisionModule.cardState == HCNetSDK.NET_SDK_CONFIG_STATUS_SUCCESS) {
+                System.out.println("获取卡参数成功, 卡号: " + new String(struCardRecord.byCardNo).trim()
+                        + ", 卡类型：" + struCardRecord.byCardType);
+                tag=true;
+                continue;
+            } else if (hikVisionModule.cardState == HCNetSDK.NET_SDK_CONFIG_STATUS_FINISH) {
+                System.out.println("获取卡参数完成");
+                break;
+            }
+        }
+        if (!hikVisionModule.hCNetSDK.NET_DVR_StopRemoteConfig(hikVisionModule.cardHandle)) {
+            System.out.println("NET_DVR_StopRemoteConfig接口调用失败，错误码：" + hikVisionModule.hCNetSDK.NET_DVR_GetLastError());
+        } else {
+
+            System.out.println("NET_DVR_StopRemoteConfig接口成功");
+        }
+        return tag;
     }
 }

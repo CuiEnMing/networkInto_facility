@@ -1,7 +1,7 @@
 package com.networkinto.facility.ahikVision.controller;
 
 import com.networkinto.facility.ahikVision.service.HikService;
-import com.networkinto.facility.common.constant.JsonResult;
+import com.networkinto.facility.ajHua.utils.JsonResult;
 import com.networkinto.facility.common.dto.CardDataDto;
 import com.networkinto.facility.common.dto.FacilityDto;
 import lombok.extern.log4j.Log4j2;

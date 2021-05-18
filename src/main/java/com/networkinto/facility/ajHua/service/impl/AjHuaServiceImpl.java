@@ -22,7 +22,9 @@ import lombok.extern.log4j.Log4j2;
 import org.eclipse.jetty.util.StringUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
 import javax.annotation.Resource;
+import javax.swing.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoField;
@@ -31,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * @author cuiEnMing
  * @Desc 门禁设备用户管理 （卡号 ，图片）
@@ -49,6 +52,7 @@ public class AjHuaServiceImpl implements AjHuaService {
      */
     @Getter
     private final ConcurrentHashMap<String, byte[]> serialAndUserIDMap = new ConcurrentHashMap<>();
+
     /**
      * 验证二维码权限
      *
@@ -79,6 +83,7 @@ public class AjHuaServiceImpl implements AjHuaService {
         }
         return JsonResult.error(message, "", code);
     }
+
     /**
      * 关闭二维码穿透
      *
@@ -91,6 +96,7 @@ public class AjHuaServiceImpl implements AjHuaService {
         String url = facilityDto.getIp() + ":" + IConst.QR_CODE_URL;
         return restTemplate.postForObject(url, map, InterfaceReturnsDto.class);
     }
+
     /**
      * 设备登出
      *
@@ -112,6 +118,7 @@ public class AjHuaServiceImpl implements AjHuaService {
             return JsonResult.error("登出失败!", toolKits.getErrorCodePrint(), ajHuaModule.netsdk.CLIENT_GetLastError() & 0x7fffffff);
         }
     }
+
     @Override
     public HumanFaceDto addPicture(byte[] fileBytes, String fileName, HumanFaceDto dto) {
         // 门禁卡记录集信息
@@ -208,7 +215,7 @@ public class AjHuaServiceImpl implements AjHuaService {
                 NetSDKLib.CtrlType.CTRLTYPE_CTRL_RECORDSET_REMOVE, remove.getPointer(), 5000);
         remove.read();
         if (!result) {
-            log.error("卡信息删除失败 ："+toolKits.getErrorCodeShow());
+            log.error("卡信息删除失败 ：" + toolKits.getErrorCodeShow());
         }
         return JsonResult.ok("ok", "");
     }
@@ -291,5 +298,59 @@ public class AjHuaServiceImpl implements AjHuaService {
         NetSDKLib.NET_TIME netTime = new NetSDKLib.NET_TIME();
         netTime.setTime(time.getYear(), time.get(ChronoField.MONTH_OF_YEAR), time.getDayOfMonth(), time.getHour(), time.getMinute(), time.getSecond());
         return netTime;
+    }
+
+    /**
+     * 检查下卡号是否存在
+     * true:不存在
+     * false:存在
+     *
+     * @param serialNumber
+     * @return
+     */
+    public boolean checkCardNo(byte[] cardNo, String serialNumber) {
+        if (cardNo.length == 0) {
+            return false;
+        }
+        //check whether the card number already exists查询一下卡号是否已经存在
+        NetSDKLib.NET_IN_FIND_RECORD_PARAM inParam = new NetSDKLib.NET_IN_FIND_RECORD_PARAM();
+        inParam.emType = NetSDKLib.EM_NET_RECORD_TYPE.NET_RECORD_ACCESSCTLCARD;
+        //查询条件
+        NetSDKLib.FIND_RECORD_ACCESSCTLCARD_CONDITION condition = new NetSDKLib.FIND_RECORD_ACCESSCTLCARD_CONDITION();
+        //卡号查询有效
+        condition.abCardNo = 1;
+        if (cardNo.length > condition.szCardNo.length - 1) {
+            return false;
+        }
+        System.arraycopy(cardNo, 0, condition.szCardNo, 0, cardNo.length);
+        inParam.pQueryCondition = new Memory(condition.size());
+        toolKits.SetStructDataToPointer(condition, inParam.pQueryCondition, 0);
+        NetSDKLib.NET_OUT_FIND_RECORD_PARAM outParam = new NetSDKLib.NET_OUT_FIND_RECORD_PARAM();
+        NetSDKLib.LLong lLong = ajHuaModule.getHandleMap().get(serialNumber);
+        boolean startFind = ajHuaModule.netsdk.CLIENT_FindRecord(lLong, inParam, outParam, 5000);
+        if (!startFind) {
+            return false;
+        }
+        //查询卡号是否已存在
+        int max = 1;
+        NetSDKLib.NET_IN_FIND_NEXT_RECORD_PARAM inNextParam = new NetSDKLib.NET_IN_FIND_NEXT_RECORD_PARAM();
+        inNextParam.lFindeHandle = outParam.lFindeHandle;
+        inNextParam.nFileCount = max;
+        NetSDKLib.NET_OUT_FIND_NEXT_RECORD_PARAM outNextParam = new NetSDKLib.NET_OUT_FIND_NEXT_RECORD_PARAM();
+        outNextParam.nMaxRecordNum = max;
+        NetSDKLib.NET_RECORDSET_ACCESS_CTL_CARD[] card = new NetSDKLib.NET_RECORDSET_ACCESS_CTL_CARD[1];
+        card[0] = new NetSDKLib.NET_RECORDSET_ACCESS_CTL_CARD();
+        outNextParam.pRecordList = new Memory(card[0].size() * max);
+        toolKits.SetStructArrToPointerData(card, outNextParam.pRecordList);
+        ajHuaModule.netsdk.CLIENT_FindNextRecord(inNextParam, outNextParam, 5000);
+        if (outNextParam.nRetRecordNum != 0 ) {
+            //卡号已存在
+            //停止查询
+            ajHuaModule.netsdk.CLIENT_FindRecordClose(outParam.lFindeHandle);
+            return false;
+        }
+        //停止查询
+        ajHuaModule.netsdk.CLIENT_FindRecordClose(outParam.lFindeHandle);
+        return true;
     }
 }

@@ -70,15 +70,15 @@ public class HikVisionModule {
     /**
      * 设备登录
      */
-    public boolean login(FacilityDto deviceDto) {
+    public boolean login(String ip, int port, String account, String password, String serialNumber) {
 
         HCNetSDK.NET_DVR_DEVICEINFO_V30 strDeviceInfo = new HCNetSDK.NET_DVR_DEVICEINFO_V30();
-        int userId = hCNetSDK.NET_DVR_Login_V30(deviceDto.getIp(), (short) deviceDto.getPort(), deviceDto.getAccount(), deviceDto.getPassword(), strDeviceInfo);
+        int userId = hCNetSDK.NET_DVR_Login_V30(ip, (short) port, account, password, strDeviceInfo);
         if (userId == -1) {
             log.error("登录失败，错误码为" + hCNetSDK.NET_DVR_GetLastError());
             return false;
         } else {
-            userHandleMap.put(deviceDto.getSerialNumber(), userId);
+            userHandleMap.put(serialNumber, userId);
             log.info("登录成功！");
         }
 

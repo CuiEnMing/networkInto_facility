@@ -1,11 +1,13 @@
 package com.networkinto.facility.ajHua.module;
 
+import com.networkinto.facility.ajHua.init.AjHuaInit;
 import com.networkinto.facility.ajHua.utils.NetSDKLib;
 import com.networkinto.facility.ajHua.utils.ToolKits;
 import com.networkinto.facility.common.constant.IConst;
 import com.networkinto.facility.common.dto.FacilityDto;
 import com.networkinto.facility.common.dto.InterfaceReturnsDto;
 import com.networkinto.facility.common.thread.ThreadPoolUtil;
+import com.sun.jna.Pointer;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,9 +16,14 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
-import java.io.File;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
@@ -53,6 +60,18 @@ public class AjHuaModule {
     public NetSDKLib.LLong m_hLoginHandle = new NetSDKLib.LLong(0);
     private boolean bInit = false;
     private boolean bLogopen = false;
+    /**
+     * 用于人脸检测
+     */
+    private static int groupId = 0;
+    /**
+     * 人脸图
+     */
+    private static BufferedImage bufferedImage = null;
+    /**
+     * 全景图
+     */
+    private static BufferedImage globalBufferedImage = null;
 
     /**
      * 设备初始化
@@ -224,11 +243,78 @@ public class AjHuaModule {
     /**
      * 组装参数 ConcurrentHashMap 保证多线程下map线程安全
      */
-    public  ConcurrentHashMap<Object, Object> qrCodeParams(String val, String val1, String val2) {
+    public ConcurrentHashMap<Object, Object> qrCodeParams(String val, String val1, String val2) {
         ConcurrentHashMap<Object, Object> map = new ConcurrentHashMap<>(8);
         map.put("device_number", val);
         map.put("cmd", val2);
         map.put("url", val1);
         return map;
     }
+
+    /**
+     * 保存人脸检测事件图片
+     *
+     * @param pBuffer        抓拍图片信息
+     * @param dwBufSize      抓拍图片大小
+     * @param faceDetectInfo 人脸检测事件信息
+     */
+    public void saveFaceDetectPic(Pointer pBuffer, int dwBufSize,
+                                  NetSDKLib.DEV_EVENT_FACEDETECT_INFO faceDetectInfo) {
+        File path = new File("D:\\FaceDetection\\");
+        if (!path.exists()) {
+            path.mkdir();
+        }
+
+        if (pBuffer == null || dwBufSize <= 0) {
+            return;
+        }
+
+        // 小图的 stuObject.nRelativeID 来匹配大图的 stuObject.nObjectID，来判断是不是 一起的图片
+        /**
+         *保存人脸图
+         */
+        if (groupId != faceDetectInfo.stuObject.nRelativeID) {
+            bufferedImage = null;
+            groupId = faceDetectInfo.stuObject.nObjectID;
+
+            String strGlobalPicPathName = path + "\\" + faceDetectInfo.UTC.toStringTitle() + "_FaceDetection_Global.jpg";
+            byte[] bufferGlobal = pBuffer.getByteArray(0, dwBufSize);
+            ByteArrayInputStream byteArrInputGlobal = new ByteArrayInputStream(bufferGlobal);
+
+            try {
+                globalBufferedImage = ImageIO.read(byteArrInputGlobal);
+                if (globalBufferedImage != null) {
+                    File globalFile = new File(strGlobalPicPathName);
+                    if (globalFile != null) {
+                        ImageIO.write(globalBufferedImage, "jpg", globalFile);
+                    }
+                }
+            } catch (IOException e2) {
+                e2.printStackTrace();
+            }
+            /**
+             *保存人脸图
+             */
+        } else if (groupId == faceDetectInfo.stuObject.nRelativeID) {
+            if (faceDetectInfo.stuObject.stPicInfo != null) {
+                String strPersonPicPathName = path + "\\" + faceDetectInfo.UTC.toStringTitle() + "_FaceDetection_Person.jpg";
+                byte[] bufferPerson = pBuffer.getByteArray(0, dwBufSize);
+                ByteArrayInputStream byteArrInputPerson = new ByteArrayInputStream(bufferPerson);
+
+                try {
+                    bufferedImage = ImageIO.read(byteArrInputPerson);
+                    if (bufferedImage != null) {
+                        File personFile = new File(strPersonPicPathName);
+                        if (personFile != null) {
+                            ImageIO.write(bufferedImage, "jpg", personFile);
+                        }
+                    }
+                } catch (IOException e2) {
+                    e2.printStackTrace();
+                }
+            }
+        }
+    }
+
+
 }

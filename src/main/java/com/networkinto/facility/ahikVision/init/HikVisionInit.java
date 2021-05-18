@@ -53,7 +53,7 @@ public class HikVisionInit implements CommandLineRunner {
                 //开启线程池
                 Runnable loginRunnable = () -> {
                     //登录设备
-                    if (!hikVisionModule.login(facilityDto)) {
+                    if (!hikVisionModule.login(facilityDto.getIp(), facilityDto.getPort(), facilityDto.getAccount(), facilityDto.getPassword(), facilityDto.getSerialNumber())) {
                         List<String> failDevice = IConst.failDevice;
                         if (!failDevice.contains(facilityDto.getIp())) {
                             IConst.failDevice.add(facilityDto.getIp());

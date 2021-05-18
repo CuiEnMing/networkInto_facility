@@ -5,7 +5,9 @@ import com.networkinto.facility.ahikVision.service.HikService;
 import com.networkinto.facility.ajHua.service.AjHuaService;
 import com.networkinto.facility.common.constant.IConst;
 import com.networkinto.facility.common.dto.HumanFaceDto;
+import com.networkinto.facility.opencv.OpencvFace;
 import lombok.extern.log4j.Log4j2;
+import org.opencv.core.Mat;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -15,10 +17,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * @author cuiEnMing
@@ -34,14 +35,16 @@ public class FacilityJob {
     private AjHuaService ajHuaService;
     @Resource
     private HikService hikService;
+    @Resource
+    private OpencvFace opencvFace;
 
     /**
      * 人脸下发
      */
-    @Scheduled(cron = "0 */1 * * * ?")
+   // @Scheduled(cron = "*/5 * * * * ?")
     private void humanFace() {
         //过滤注册失败的设备 不做该设备下发
-        List<String> failDevice =  IConst.failDevice;;
+        List<String> failDevice = IConst.failDevice;
         //返回数据下发结果
         List<HumanFaceDto> faceResult = new ArrayList<>();
         ParameterizedTypeReference<List<HumanFaceDto>> type = new ParameterizedTypeReference<List<HumanFaceDto>>() {
@@ -53,20 +56,6 @@ public class FacilityJob {
             return;
         }
         //根据设备序列号分组 方便批量导入
-        Map<String, List<HumanFaceDto>> listMap = body.stream().collect(Collectors.groupingBy(HumanFaceDto::getSerialNumber));
-        listMap.forEach((key, val) -> {
-            for (HumanFaceDto dto : val) {
-                //过滤异常设备任务
-                if (failDevice.contains(dto.getIp())) {
-                    log.info("跳过设备 ip：" + dto.getIp());
-                    continue;
-                }
-                if (dto.getNoNum() > 3) {
-                    log.info("失败次数大于三次 不在继续下发 用户名：" + dto.getPersonName());
-                    continue;
-                }
-            }
-        });
         for (HumanFaceDto faceDto : body) {
             if (failDevice.contains(faceDto.getIp())) {
                 log.info("跳过设备 ip：" + faceDto.getIp());
@@ -81,7 +70,8 @@ public class FacilityJob {
                 continue;
             }
             try {
-                byte[] bytes = IConst.imgConvert(imgUrl);
+                Mat mat = IConst.inputStream2Mat(imgUrl);
+                byte[] bytes = opencvFace.buttonFace(mat);
                 HumanFaceDto humanFaceDto = new HumanFaceDto();
                 if (faceDto.getDeviceType() == 0) {
                     humanFaceDto = ajHuaService.addPicture(bytes, faceDto.getPersonName(), faceDto);
@@ -90,12 +80,22 @@ public class FacilityJob {
                     /**
                      * 卡状态==-1 代表卡号下发失败
                      * */
-                    if (humanFaceDto.getCardStatus() != -1) {
+                    if (true) {
                         humanFaceDto = hikService.addPicture(bytes, faceDto);
                     }
                 }
                 faceResult.add(humanFaceDto);
+            } catch (IOException ioException) {
+                log.error("图片转换错误 路径->：" + imgUrl);
+                faceDto.setNoNum(4);
+                faceDto.setCardStatus(-1);
+                faceDto.setFingerStatus(-1);
+                faceDto.setFailRemark("图片转换错误 路径->：" + imgUrl);
+                faceResult.add(faceDto);
+                restTemplate.postForEntity(IConst.FACE_RESULT, faceResult, String.class);
+                ioException.printStackTrace();
             } catch (Exception e) {
+                log.error("格式转换异常->：" + imgUrl);
                 e.printStackTrace();
             }
         }
