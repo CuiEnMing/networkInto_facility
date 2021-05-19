@@ -21,7 +21,7 @@ public class OpencvFace {
      * 构造函数，加载默认模型文件
      */
     public OpencvFace() {
-        faceDetector = new CascadeClassifier(IConst.DEFAULT_FACE_MODEL_PATH);
+        faceDetector = new CascadeClassifier(IConst.openCv.DEFAULT_FACE_MODEL_PATH.getName());
     }
 
     static {
@@ -30,7 +30,7 @@ public class OpencvFace {
 
     public byte[] buttonFace(Mat inMat) {
         if (null == faceDetector || faceDetector.empty()) {
-            System.out.println("加载模型文件失败: " + IConst.DEFAULT_FACE_MODEL_PATH);
+            System.out.println("加载模型文件失败: " + IConst.openCv.DEFAULT_FACE_MODEL_PATH.getName());
         }
         Mat grey = new Mat();
         ImageUtil.gray(inMat, grey);

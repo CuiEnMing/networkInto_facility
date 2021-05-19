@@ -29,14 +29,10 @@ public class HikVisionController {
     @GetMapping()
     private JsonResult<List<CardDataDto>> queryCard() {
         FacilityDto facilityDto = new FacilityDto();
-        facilityDto.setSerialNumber("netmarch2021");
         return JsonResult.ok("ok", hikService.queryCard(facilityDto));
     }
     @DeleteMapping()
-    private JsonResult<String> deleteCard() {
-        CardDataDto facilityDto = new CardDataDto();
-        facilityDto.setCardNo(1345);
-        facilityDto.setSerialNumber("netmarch2021");
+    private JsonResult<String> deleteCard(CardDataDto facilityDto) {
         return JsonResult.ok("ok", hikService.deleteCard(facilityDto));
     }
 

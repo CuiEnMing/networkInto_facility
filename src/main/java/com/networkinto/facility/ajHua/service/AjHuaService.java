@@ -5,10 +5,8 @@ import com.networkinto.facility.common.dto.CardDataDto;
 import com.networkinto.facility.common.dto.FacilityDto;
 import com.networkinto.facility.common.dto.HumanFaceDto;
 import com.networkinto.facility.common.dto.InterfaceReturnsDto;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author cuiEnMing

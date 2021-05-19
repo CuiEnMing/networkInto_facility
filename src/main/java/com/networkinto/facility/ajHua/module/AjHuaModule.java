@@ -1,9 +1,9 @@
 package com.networkinto.facility.ajHua.module;
 
-import com.networkinto.facility.ajHua.init.AjHuaInit;
 import com.networkinto.facility.ajHua.utils.NetSDKLib;
 import com.networkinto.facility.ajHua.utils.ToolKits;
 import com.networkinto.facility.common.constant.IConst;
+import com.networkinto.facility.common.constant.UrlUtils;
 import com.networkinto.facility.common.dto.FacilityDto;
 import com.networkinto.facility.common.dto.InterfaceReturnsDto;
 import com.networkinto.facility.common.thread.ThreadPoolUtil;
@@ -18,12 +18,11 @@ import org.springframework.web.client.RestTemplate;
 import javax.annotation.Resource;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
@@ -200,15 +199,9 @@ public class AjHuaModule {
      * @since 2021/4/26 9:35
      */
     public void qrCode(FacilityDto facilityDto) {
-        String deviceUrl = "";
         String hostAddress = "";
         REENTRANT_LOCK.lock();
         try {
-            String ip = facilityDto.getIp();
-            //获得设备端口
-            //设备接口路径
-            deviceUrl = ip + IConst.QR_CODE_URL;
-            log.info("url :" + deviceUrl);
             //项目部署环境ip
             hostAddress = InetAddress.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
@@ -219,21 +212,23 @@ public class AjHuaModule {
         }
         //组装传输数据
         String finalHostAddress = hostAddress;
-        String finalDeviceUrl = deviceUrl;
         Runnable runnable = () -> {
-            String url = "http://" + finalHostAddress + ":" + serverPort + "/facilityDto/manage/" + facilityDto.getSerialNumber() + "/QR_CODE";
+            String url = IConst.URL_PREFIX + finalHostAddress + IConst.SYMBOL + serverPort + "/facilityDto/manage/" + facilityDto.getSerialNumber() + "/QR_CODE";
             // val 设备序列号  val1 接受二维码 的接口
-            Map<Object, Object> objectObjectMap = qrCodeParams(facilityDto.getSerialNumber(), url, IConst.OPEN_QRCODE_PUSH);
+            Map<Object, Object> objectObjectMap = qrCodeParams(facilityDto.getSerialNumber(), url, IConst.qrCode.OPEN_QRCODE.getName());
             handleMap.put(facilityDto.getSerialNumber(), m_hLoginHandle);
             try {
-                InterfaceReturnsDto interfaceReturnsDto = restTemplate.postForObject("http://" + finalDeviceUrl, objectObjectMap, InterfaceReturnsDto.class);
-                if (IConst.SUCCEED_CODE.equals(interfaceReturnsDto.getCode())) {
-                    log.info("设备开启二维码穿透成功 ->" + "http://" + finalDeviceUrl);
+                //设备接口路径
+                String qrCodeUrl = UrlUtils.qrCodeUrl(facilityDto.getIp()) + IConst.qrCode.URL;
+                log.info("url :" + qrCodeUrl);
+                InterfaceReturnsDto interfaceReturnsDto = restTemplate.postForObject(qrCodeUrl, objectObjectMap, InterfaceReturnsDto.class);
+                if (IConst.SUCCEED.equals(interfaceReturnsDto.getCode())) {
+                    log.info("设备开启二维码穿透成功 ->" + qrCodeUrl);
                 } else {
-                    log.error("设备开启二维码穿透失败 ->" + "http://" + finalDeviceUrl);
+                    log.error("设备开启二维码穿透失败 ->" + qrCodeUrl);
                 }
             } catch (RestClientException e) {
-                log.error("设备开启二维码穿透失败" + "http://" + finalDeviceUrl);
+                log.error("设备开启二维码穿透失败" + UrlUtils.qrCodeUrl(facilityDto.getIp()) + IConst.qrCode.URL);
                 e.printStackTrace();
             }
         };
@@ -246,8 +241,8 @@ public class AjHuaModule {
     public ConcurrentHashMap<Object, Object> qrCodeParams(String val, String val1, String val2) {
         ConcurrentHashMap<Object, Object> map = new ConcurrentHashMap<>(8);
         map.put("device_number", val);
-        map.put("cmd", val2);
         map.put("url", val1);
+        map.put("cmd", val2);
         return map;
     }
 

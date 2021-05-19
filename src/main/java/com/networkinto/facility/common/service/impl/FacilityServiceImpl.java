@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
-import javax.swing.*;
 
 /**
  * @author cuiEnMing
@@ -33,8 +32,8 @@ public class FacilityServiceImpl implements FacilityService {
     @Override
     public void checkFacility(FacilityStatusDto facilityStatusDto) {
         if (PingUtils.ping(facilityStatusDto.getIp(), facilityStatusDto.getPort(), 3000)) {
-            facilityStatusDto.setStatus(IConst.SUCCEED_CODE);
-            if (IConst.SUCCEED_CODE == facilityStatusDto.getType()) {
+            facilityStatusDto.setStatus(IConst.SUCCEED);
+            if (IConst.SUCCEED == facilityStatusDto.getType()) {
                 if (!ajHuaModule.login(facilityStatusDto.getIp(), facilityStatusDto.getPort(), facilityStatusDto.getAccount(),
                         facilityStatusDto.getPassword(), facilityStatusDto.getSerialNumber())) {
                     //设备登录失败

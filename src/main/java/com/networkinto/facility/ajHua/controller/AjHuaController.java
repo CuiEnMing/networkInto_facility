@@ -5,15 +5,12 @@ import com.networkinto.facility.ajHua.utils.JsonResult;
 import com.networkinto.facility.common.constant.IConst;
 import com.networkinto.facility.common.dto.CardDataDto;
 import com.networkinto.facility.common.dto.FacilityDto;
-import com.networkinto.facility.common.dto.HumanFaceDto;
 import com.networkinto.facility.common.dto.InterfaceReturnsDto;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author cuiEnMing
@@ -67,7 +64,7 @@ public class AjHuaController {
     @PostMapping("/close/QR_CODE")
     private JsonResult<String> closeQrCOde(@RequestParam FacilityDto facilityDto) {
         InterfaceReturnsDto returnsDto = ajHuaService.closeQrCOde(facilityDto);
-        if (IConst.SUCCEED_CODE.equals(returnsDto.getCode())) {
+        if (IConst.SUCCEED.equals(returnsDto.getCode())) {
             return JsonResult.ok(returnsDto.getMessage(), returnsDto.getData());
         }
         return JsonResult.error(returnsDto.getMessage(), returnsDto.getData(), returnsDto.getCode());

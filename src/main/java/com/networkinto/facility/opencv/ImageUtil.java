@@ -5,9 +5,7 @@ import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
-import java.io.File;
 import java.util.List;
-import java.util.Vector;
 
 /**
  * 图片处理工具类

@@ -2,6 +2,7 @@ package com.networkinto.facility.ahikVision.init;
 
 import com.networkinto.facility.ahikVision.module.HikVisionModule;
 import com.networkinto.facility.common.constant.IConst;
+import com.networkinto.facility.common.constant.UrlUtils;
 import com.networkinto.facility.common.dto.FacilityDto;
 import com.networkinto.facility.common.thread.ThreadPoolUtil;
 import lombok.extern.log4j.Log4j2;
@@ -26,10 +27,18 @@ import java.util.List;
 @Component
 @Order(value = 2)
 public class HikVisionInit implements CommandLineRunner {
+    /**
+     * 海康模组
+     */
     @Resource
     private HikVisionModule hikVisionModule;
     @Resource
     private RestTemplate restTemplate;
+    /**
+     * restTemplate 参数
+     */
+    ParameterizedTypeReference<List<FacilityDto>> type = new ParameterizedTypeReference<List<FacilityDto>>() {
+    };
 
     @Override
     public void run(String... args) {
@@ -39,12 +48,16 @@ public class HikVisionInit implements CommandLineRunner {
             log.info("海康sdk 初始化失败");
             return;
         }
-        ParameterizedTypeReference<List<FacilityDto>> type = new ParameterizedTypeReference<List<FacilityDto>>() {
-        };
-        ResponseEntity<List<FacilityDto>> responseEntity = restTemplate.exchange(IConst.AJ_HUA_DEVICE, HttpMethod.GET, null, type);
+        /**
+         * 查询所有设备
+         * */
+        String url = UrlUtils.wisdomCommunityUrl()+ IConst.wisdomCommunity.FACILITY_INTERFACE;
+        log.info("拼接url为:->" + url);
+        ResponseEntity<List<FacilityDto>> responseEntity = restTemplate.exchange(url, HttpMethod.GET,
+                null, type);
         List<FacilityDto> list = responseEntity.getBody();
         for (FacilityDto facilityDto : list) {
-            if (facilityDto.getDeviceType() == IConst.SUCCEED_CODE) {
+            if (facilityDto.getDeviceType() == IConst.SUCCEED) {
                 continue;
             }
             if (StringUtil.isNotBlank(facilityDto.getId()) && StringUtil.isNotBlank(facilityDto.getAccount())
@@ -53,7 +66,10 @@ public class HikVisionInit implements CommandLineRunner {
                 //开启线程池
                 Runnable loginRunnable = () -> {
                     //登录设备
-                    if (!hikVisionModule.login(facilityDto.getIp(), facilityDto.getPort(), facilityDto.getAccount(), facilityDto.getPassword(), facilityDto.getSerialNumber())) {
+                    if (!hikVisionModule.login(facilityDto.getIp(), facilityDto.getPort(), facilityDto.getAccount(),
+                            facilityDto.getPassword(), facilityDto.getSerialNumber())) {
+                        //TODO 设备登录失败 日志保存  2  调用接口修改设备状态
+                        //登录失败设备集合
                         List<String> failDevice = IConst.failDevice;
                         if (!failDevice.contains(facilityDto.getIp())) {
                             IConst.failDevice.add(facilityDto.getIp());
@@ -62,13 +78,10 @@ public class HikVisionInit implements CommandLineRunner {
                 };
                 //提交线程
                 ThreadPoolUtil.newHkCachedThreadPool().submit(loginRunnable);
-
             } else {
                 log.warn("设备基础信息异常：->" + facilityDto);
             }
 
         }
-        // Thread.sleep(10000);
-        //hikVisionModule.getAllCard(device);
     }
 }

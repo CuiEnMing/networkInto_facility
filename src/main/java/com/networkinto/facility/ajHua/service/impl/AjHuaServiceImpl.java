@@ -10,6 +10,7 @@ import com.networkinto.facility.ajHua.utils.JsonResult;
 import com.networkinto.facility.ajHua.utils.NetSDKLib;
 import com.networkinto.facility.ajHua.utils.ToolKits;
 import com.networkinto.facility.common.constant.IConst;
+import com.networkinto.facility.common.constant.UrlUtils;
 import com.networkinto.facility.common.dto.CardDataDto;
 import com.networkinto.facility.common.dto.FacilityDto;
 import com.networkinto.facility.common.dto.HumanFaceDto;
@@ -24,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
-import javax.swing.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoField;
@@ -61,7 +61,7 @@ public class AjHuaServiceImpl implements AjHuaService {
      */
     @Override
     public JsonResult<String> checkQrCode(String qrCode) {
-        String res = HttpUtil.createPost(IConst.API_SERVER + IConst.CHECK_CODE_URL)
+        String res = HttpUtil.createPost(IConst.URL_PREFIX + IConst.qrCode.ROAD_SERVICE.getName() + IConst.qrCode.CHECK_CODE.getName())
                 .setMethod(Method.POST)
                 .contentType("application/x-www-form-urlencoded")
                 .form("qrcode", qrCode)
@@ -92,8 +92,9 @@ public class AjHuaServiceImpl implements AjHuaService {
      */
     @Override
     public InterfaceReturnsDto closeQrCOde(FacilityDto facilityDto) {
-        Map<Object, Object> map = ajHuaModule.qrCodeParams(facilityDto.getSerialNumber(), "", IConst.CLOSE_QRCODE_PUSH);
-        String url = facilityDto.getIp() + ":" + IConst.QR_CODE_URL;
+        Map<Object, Object> map = ajHuaModule.qrCodeParams(facilityDto.getSerialNumber(), "", IConst.qrCode.CLOSE_QRCODE.getName());
+        String qrCodeUrl = UrlUtils.qrCodeUrl(facilityDto.getIp());
+        String url = qrCodeUrl + IConst.qrCode.URL;
         return restTemplate.postForObject(url, map, InterfaceReturnsDto.class);
     }
 
@@ -160,7 +161,7 @@ public class AjHuaServiceImpl implements AjHuaService {
             dto.setCardStatus(1);
         }
         //增加人脸图片
-        if (fileBytes.length > IConst.SUCCEED_CODE) {
+        if (fileBytes.length > IConst.SUCCEED) {
             NetSDKLib.NET_IN_ADD_FACE_INFO inAddFaceInfo = new NetSDKLib.NET_IN_ADD_FACE_INFO();
             NetSDKLib.NET_TIME startTime = setNetTime(dto.getStartTime());
             NetSDKLib.NET_TIME endTime = setNetTime(dto.getExpiresTime());
@@ -343,7 +344,7 @@ public class AjHuaServiceImpl implements AjHuaService {
         outNextParam.pRecordList = new Memory(card[0].size() * max);
         toolKits.SetStructArrToPointerData(card, outNextParam.pRecordList);
         ajHuaModule.netsdk.CLIENT_FindNextRecord(inNextParam, outNextParam, 5000);
-        if (outNextParam.nRetRecordNum != 0 ) {
+        if (outNextParam.nRetRecordNum != 0) {
             //卡号已存在
             //停止查询
             ajHuaModule.netsdk.CLIENT_FindRecordClose(outParam.lFindeHandle);

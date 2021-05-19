@@ -4,6 +4,7 @@ import com.networkinto.facility.ajHua.module.AjHuaModule;
 import com.networkinto.facility.ajHua.utils.NetSDKLib;
 import com.networkinto.facility.ajHua.utils.ToolKits;
 import com.networkinto.facility.common.constant.IConst;
+import com.networkinto.facility.common.constant.UrlUtils;
 import com.networkinto.facility.common.dto.FaceInfoDto;
 import com.networkinto.facility.common.dto.FacilityDto;
 import com.networkinto.facility.common.thread.ThreadPoolUtil;
@@ -20,12 +21,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -57,10 +52,13 @@ public class AjHuaInit implements CommandLineRunner {
         }
         ParameterizedTypeReference<List<FacilityDto>> type = new ParameterizedTypeReference<List<FacilityDto>>() {
         };
-        ResponseEntity<List<FacilityDto>> responseEntity = restTemplate.exchange(IConst.AJ_HUA_DEVICE, HttpMethod.GET, null, type);
+        String wisdomCommunityUrl = UrlUtils.wisdomCommunityUrl();
+        String url = wisdomCommunityUrl + IConst.wisdomCommunity.FACILITY_INTERFACE;
+        log.info("拼接url为:->" + url);
+        ResponseEntity<List<FacilityDto>> responseEntity = restTemplate.exchange(url, HttpMethod.GET, null, type);
         List<FacilityDto> list = responseEntity.getBody();
         for (FacilityDto deviceDto : list) {
-            if (deviceDto.getDeviceType() != IConst.SUCCEED_CODE) {
+            if (deviceDto.getDeviceType() != IConst.SUCCEED) {
                 continue;
             }
             if (StringUtil.isNotBlank(deviceDto.getId()) && StringUtil.isNotBlank(deviceDto.getAccount())
@@ -76,7 +74,6 @@ public class AjHuaInit implements CommandLineRunner {
                             IConst.failDevice.add(deviceDto.getIp());
                         }
 
-                        //.add(deviceDto.getIp());
                         log.error("设备登录失败 ip->{}，端口->{},用户名->{},密码->{}", deviceDto.getIp(), deviceDto.getPort(),
                                 deviceDto.getAccount(), deviceDto.getPassword());
                     } else {

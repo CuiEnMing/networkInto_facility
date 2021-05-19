@@ -1,23 +1,13 @@
 package com.networkinto.facility.ahikVision.module;
 
-import com.alibaba.fastjson.JSONArray;
+
 import com.networkinto.facility.ahikVision.utils.HCNetSDK;
-import com.networkinto.facility.common.dto.FacilityDto;
 import com.sun.jna.Pointer;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * 海康设备管理
@@ -34,9 +24,6 @@ public class HikVisionModule {
      */
     @Getter
     private ConcurrentHashMap<String, Integer> userHandleMap = new ConcurrentHashMap<>();
-    /**
-     * 用户句柄
-     */
     /**
      * 下发卡长连接句柄
      */
@@ -57,8 +44,8 @@ public class HikVisionModule {
      * 报警布防句柄
      */
     int lAlarmHandle = -1;
-    //报警回调函数实现
-    public static callBack callBacks;
+    public HikAlarmCallBack callBacks = new HikAlarmCallBack();
+
 
     /**
      * 设备初始化
@@ -71,7 +58,6 @@ public class HikVisionModule {
      * 设备登录
      */
     public boolean login(String ip, int port, String account, String password, String serialNumber) {
-
         HCNetSDK.NET_DVR_DEVICEINFO_V30 strDeviceInfo = new HCNetSDK.NET_DVR_DEVICEINFO_V30();
         int userId = hCNetSDK.NET_DVR_Login_V30(ip, (short) port, account, password, strDeviceInfo);
         if (userId == -1) {
@@ -81,11 +67,8 @@ public class HikVisionModule {
             userHandleMap.put(serialNumber, userId);
             log.info("登录成功！");
         }
-
-
-        callBacks = new callBack();
-        Pointer pUser = null;
-        if (!hCNetSDK.NET_DVR_SetDVRMessageCallBack_V31(callBacks, pUser)) {
+        Pointer pointer = null;
+        if (!hCNetSDK.NET_DVR_SetDVRMessageCallBack_V31(callBacks, pointer)) {
             System.out.println("设置回调函数失败!");
         }
         HCNetSDK.NET_DVR_SETUPALARM_PARAM m_strAlarmInfo = new HCNetSDK.NET_DVR_SETUPALARM_PARAM();
@@ -104,14 +87,5 @@ public class HikVisionModule {
             log.info("布防成功");
         }
         return true;
-    }
-
-    public class callBack implements HCNetSDK.FMSGCallBack_V31 {
-        //报警信息回调函数
-        @Override
-        public boolean invoke(int lCommand, HCNetSDK.NET_DVR_ALARMER pAlarmer, Pointer pAlarmInfo, int dwBufLen, Pointer pUser) {
-            AlarmDataHandle.alarm(lCommand, pAlarmer, pAlarmInfo, dwBufLen, pUser);
-            return true;
-        }
     }
 }
