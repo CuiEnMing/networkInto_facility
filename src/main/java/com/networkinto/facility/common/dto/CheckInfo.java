@@ -6,16 +6,14 @@ import lombok.NoArgsConstructor;
 
 /**
  * @author cuiEnMing
- * @Desc 外部接口
- */
-@Data
+ * @date 2021/5/31 16:41
+ */@Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class InterfaceReturnsDto {
+public class CheckInfo {
     /**
-     * 0成功
+     * 欢迎光临
      */
-    private Integer code;
-    private String message;
-    private String data;
+    private String prompts;
+    private CheckInfo1 userInfo= new CheckInfo1();
 }

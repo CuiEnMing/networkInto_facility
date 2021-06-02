@@ -1,13 +1,15 @@
 package com.networkinto.facility.ajHua.controller;
 
+import cn.hutool.json.JSONUtil;
+import com.google.gson.Gson;
 import com.networkinto.facility.ajHua.service.AjHuaService;
 import com.networkinto.facility.ajHua.utils.JsonResult;
 import com.networkinto.facility.common.constant.IConst;
-import com.networkinto.facility.common.dto.CardDataDto;
-import com.networkinto.facility.common.dto.FacilityDto;
-import com.networkinto.facility.common.dto.InterfaceReturnsDto;
+import com.networkinto.facility.common.dto.*;
+import com.networkinto.facility.common.mq.UserQrCodeProducer;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.*;
+import springfox.documentation.spring.web.json.Json;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -22,6 +24,9 @@ import java.util.List;
 public class AjHuaController {
     @Resource
     private AjHuaService ajHuaService;
+    @Resource
+    private UserQrCodeProducer userQrCodeProducer;
+
     /**
      * @return JsonResult
      * @Description 查询卡信息
@@ -32,6 +37,7 @@ public class AjHuaController {
     private List<CardDataDto> queryCard(@RequestParam String serialNumber) {
         return ajHuaService.queryCard(serialNumber);
     }
+
     /**
      * @return JsonResult
      * @Description 删除卡信息
@@ -51,8 +57,13 @@ public class AjHuaController {
      * @author cuiEnMing
      */
     @PostMapping("/{serial}/QR_CODE")
-    private JsonResult<String> checkQrCode(@RequestParam String code, @PathVariable String serial) {
-        return ajHuaService.checkQrCode(code);
+    private InterfaceReturnsDto checkQrCode(@RequestParam String code, @PathVariable String serial) {
+        InterfaceReturnsDto interfaceReturnsDto = new InterfaceReturnsDto(0, "操作成功", "data");
+        Gson gson = new Gson();
+        //"{\"message\":\"认证成功\",\"code\":0,\"data\":\"\"}";
+        String s = gson.toJson(interfaceReturnsDto);
+        log.info(s);
+        return interfaceReturnsDto;
     }
 
     /**

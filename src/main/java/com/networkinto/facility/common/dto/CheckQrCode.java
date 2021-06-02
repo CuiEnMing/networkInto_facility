@@ -5,17 +5,21 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
+ * 与智慧小区验证二维码权限
+ *
  * @author cuiEnMing
- * @Desc 外部接口
+ * @date 2021/5/31 10:03
  */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class InterfaceReturnsDto {
+public class CheckQrCode {
     /**
-     * 0成功
+     * 二维码
      */
-    private Integer code;
-    private String message;
-    private String data;
+    private String QrCode;
+    /**
+     * 设备序列号
+     */
+    private String serial;
 }

@@ -11,10 +11,10 @@ import com.networkinto.facility.common.thread.ThreadPoolUtil;
 import com.sun.jna.Pointer;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
+import org.apache.logging.log4j.core.config.Order;
 import org.eclipse.jetty.util.StringUtil;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -29,8 +29,8 @@ import java.util.List;
  * @author cuiEnMing
  * @date 2021/5/13 14:53
  */
-@Log4j2
 @Component
+@Log4j2
 @Order(value = 1)
 public class AjHuaInit implements CommandLineRunner {
     @Resource
@@ -45,7 +45,7 @@ public class AjHuaInit implements CommandLineRunner {
     private static HaveReConnect haveReConnect = new HaveReConnect();
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         if (!ajHuaModule.init(disConnect, haveReConnect)) {
             log.error("设备sdk初始化失败");
             return;
@@ -53,12 +53,12 @@ public class AjHuaInit implements CommandLineRunner {
         ParameterizedTypeReference<List<FacilityDto>> type = new ParameterizedTypeReference<List<FacilityDto>>() {
         };
         String wisdomCommunityUrl = UrlUtils.wisdomCommunityUrl();
-        String url = wisdomCommunityUrl + IConst.wisdomCommunity.FACILITY_INTERFACE;
+        String url = wisdomCommunityUrl + IConst.wisdomCommunity.FACILITY_INTERFACE.getName();
         log.info("拼接url为:->" + url);
         ResponseEntity<List<FacilityDto>> responseEntity = restTemplate.exchange(url, HttpMethod.GET, null, type);
         List<FacilityDto> list = responseEntity.getBody();
         for (FacilityDto deviceDto : list) {
-            if (deviceDto.getDeviceType() != IConst.SUCCEED) {
+            if (deviceDto.getDeviceType() != IConst.TWO) {
                 continue;
             }
             if (StringUtil.isNotBlank(deviceDto.getId()) && StringUtil.isNotBlank(deviceDto.getAccount())
@@ -98,9 +98,11 @@ public class AjHuaInit implements CommandLineRunner {
 
     }
 
+
     /**
      * 设备断线回调: 通过 CLIENT_Init 设置该回调函数，当设备出现断线时，SDK会调用该函数
      */
+
     private class DisConnect implements NetSDKLib.fDisConnect {
         @Override
         public void invoke(NetSDKLib.LLong m_hLoginHandle, String pchDVRIP, int nDVRPort, Pointer dwUser) {
@@ -113,9 +115,11 @@ public class AjHuaInit implements CommandLineRunner {
         }
     }
 
+
     /**
      * 网络连接恢复，设备重连成功回调
      */
+
     private static class HaveReConnect implements NetSDKLib.fHaveReConnect {
         @Override
         public void invoke(NetSDKLib.LLong m_hLoginHandle, String pchDVRIP, int nDVRPort, Pointer dwUser) {
@@ -128,9 +132,11 @@ public class AjHuaInit implements CommandLineRunner {
         }
     }
 
+
     /**
      * 人脸订阅回调
      */
+
     private class FaceCallBack implements NetSDKLib.fAnalyzerDataCallBack {
         @Override
         public int invoke(NetSDKLib.LLong lAnalyzerHandle, int dwAlarmType,
@@ -152,6 +158,7 @@ public class AjHuaInit implements CommandLineRunner {
                     accessEvent.openDoorMethod = event.emOpenMethod;
                     int nErrorCode = event.nErrorCode;
                     int bStatus = event.bStatus;
+                    String trim1 = new String(event.szCitizenIDNo).trim();
                     NetSDKLib.DEV_ACCESS_CTL_IMAGE_INFO[] stuImageInfo = event.stuImageInfo;
                     log.info(accessEvent.toString());
                     // 耗时800ms左右
@@ -160,6 +167,11 @@ public class AjHuaInit implements CommandLineRunner {
                     // 耗时20ms左右
                     toolKits.GetPointerData(pAlarmInfo, msg);
                     ajHuaModule.saveFaceDetectPic(pBuffer, dwBufSize, msg);
+
+                    break;
+                case NetSDKLib.EVENT_IVS_CITIZEN_PICTURE_COMPARE:   //todo 人证事件
+                    NetSDKLib.DEV_EVENT_CITIZEN_PICTURE_COMPARE_INFO devCompareInfo = new NetSDKLib.DEV_EVENT_CITIZEN_PICTURE_COMPARE_INFO();
+                    String trim = new String(devCompareInfo.szNumber).trim();
                     break;
                 default:
                     break;

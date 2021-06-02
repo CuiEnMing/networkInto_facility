@@ -1,49 +1,40 @@
 package com.networkinto.facility.common.config;
 
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.StringHttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
-import javax.annotation.Resource;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
- * @author cuiEnMing
- * @Desc RestTemplate客户端连接池配置
+ * RestTemplate Config
+ *
+ * @author Hu Jingling
+ * @version 1.0
+ * @since 2020-08-04
  */
 @Configuration
 public class RestTemplateConfig {
-
-    @Resource
-    private CloseableHttpClient httpClient;
-
+    /**
+     *  配置 RestTemplate
+     * @param factory
+     * @return
+     */
     @Bean
-    public RestTemplate restTemplate(MappingJackson2HttpMessageConverter jackson2HttpMessageConverter) {
-        RestTemplate restTemplate = new RestTemplate(clientHttpRequestFactory());
-        List<HttpMessageConverter<?>> messageConverters = new ArrayList<>();
-        StringHttpMessageConverter stringHttpMessageConverter = new StringHttpMessageConverter(Charset.forName("utf-8"));
-        stringHttpMessageConverter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
-        messageConverters.add(stringHttpMessageConverter);
-        messageConverters.add(jackson2HttpMessageConverter);
-        restTemplate.setMessageConverters(messageConverters);
-        return restTemplate;
+    public RestTemplate restTemplate(ClientHttpRequestFactory factory){
+        return new RestTemplate(factory);
     }
 
     @Bean
-    public HttpComponentsClientHttpRequestFactory clientHttpRequestFactory() {
-        HttpComponentsClientHttpRequestFactory rf = new HttpComponentsClientHttpRequestFactory();
-        rf.setHttpClient(httpClient);
-        return rf;
+    public ClientHttpRequestFactory simpleClientHttpRequestFactory(){
+        // 创建一个 httpCilent 简单工厂
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        // 设置连接超时
+        factory.setConnectTimeout(15000);
+        // 设置读取超时
+        factory.setReadTimeout(5000);
+        return factory;
     }
-
 
 }

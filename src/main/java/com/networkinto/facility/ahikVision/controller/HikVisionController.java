@@ -1,16 +1,15 @@
 package com.networkinto.facility.ahikVision.controller;
 
+import com.google.gson.Gson;
 import com.networkinto.facility.ahikVision.service.HikService;
+import com.networkinto.facility.ajHua.service.AjHuaService;
 import com.networkinto.facility.ajHua.utils.JsonResult;
-import com.networkinto.facility.common.dto.CardDataDto;
-import com.networkinto.facility.common.dto.FacilityDto;
+import com.networkinto.facility.common.dto.*;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.sound.sampled.Line;
 import java.util.List;
 
 /**
@@ -25,15 +24,29 @@ import java.util.List;
 public class HikVisionController {
     @Resource
     private HikService hikService;
+    @Resource
+    private AjHuaService ajHuaService;
 
     @GetMapping()
-    private JsonResult<List<CardDataDto>> queryCard() {
-        FacilityDto facilityDto = new FacilityDto();
-        return JsonResult.ok("ok", hikService.queryCard(facilityDto));
+    private JsonResult<List<CardDataDto>> queryCard(String serialNumber) {
+        return JsonResult.ok("ok", hikService.queryCard(serialNumber));
     }
+
     @DeleteMapping()
     private JsonResult<String> deleteCard(CardDataDto facilityDto) {
         return JsonResult.ok("ok", hikService.deleteCard(facilityDto));
+    }
+
+    /**
+     * 海康设备二维码穿透
+     */
+    @PostMapping()
+    private String checkCode(@RequestBody HikQrCodeDto hikQrCodeDto) {
+        RemoteCheck jsonResult = new RemoteCheck(Integer.parseInt(hikQrCodeDto.getSerialNo()), "success");
+        RemoteCheck1 remoteCheck1 = new RemoteCheck1(jsonResult);
+        Gson gson = new Gson();
+        String json = gson.toJson(remoteCheck1);
+        return json;
     }
 
 }

@@ -51,13 +51,17 @@ public class HikVisionInit implements CommandLineRunner {
         /**
          * 查询所有设备
          * */
-        String url = UrlUtils.wisdomCommunityUrl()+ IConst.wisdomCommunity.FACILITY_INTERFACE;
+        String url = UrlUtils.wisdomCommunityUrl() + IConst.wisdomCommunity.FACILITY_INTERFACE.getName();
         log.info("拼接url为:->" + url);
-        ResponseEntity<List<FacilityDto>> responseEntity = restTemplate.exchange(url, HttpMethod.GET,
-                null, type);
+        ResponseEntity<List<FacilityDto>> responseEntity =
+                restTemplate.exchange(url, HttpMethod.GET,
+                        null, type);
         List<FacilityDto> list = responseEntity.getBody();
+
+
+
         for (FacilityDto facilityDto : list) {
-            if (facilityDto.getDeviceType() == IConst.SUCCEED) {
+            if (facilityDto.getDeviceType() != IConst.ONE) {
                 continue;
             }
             if (StringUtil.isNotBlank(facilityDto.getId()) && StringUtil.isNotBlank(facilityDto.getAccount())
@@ -66,14 +70,15 @@ public class HikVisionInit implements CommandLineRunner {
                 //开启线程池
                 Runnable loginRunnable = () -> {
                     //登录设备
-                    if (!hikVisionModule.login(facilityDto.getIp(), facilityDto.getPort(), facilityDto.getAccount(),
-                            facilityDto.getPassword(), facilityDto.getSerialNumber())) {
+                    if (!hikVisionModule.login(facilityDto)) {
                         //TODO 设备登录失败 日志保存  2  调用接口修改设备状态
                         //登录失败设备集合
                         List<String> failDevice = IConst.failDevice;
                         if (!failDevice.contains(facilityDto.getIp())) {
                             IConst.failDevice.add(facilityDto.getIp());
                         }
+                    } else {
+                        hikVisionModule.qrCode(facilityDto.getSerialNumber());
                     }
                 };
                 //提交线程
@@ -85,3 +90,4 @@ public class HikVisionInit implements CommandLineRunner {
         }
     }
 }
+

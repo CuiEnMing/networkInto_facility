@@ -1,7 +1,6 @@
 package com.networkinto.facility.ahikVision.service;
 
 import com.networkinto.facility.common.dto.CardDataDto;
-import com.networkinto.facility.common.dto.FacilityDto;
 import com.networkinto.facility.common.dto.HumanFaceDto;
 
 import java.util.List;
@@ -33,10 +32,10 @@ public interface HikService {
     /**
      * 设备卡查询
      *
-     * @param facilityDto
+     * @param serialNumber
      * @return HumanFaceDto
      */
-    List<CardDataDto> queryCard(FacilityDto facilityDto);
+    List<CardDataDto> queryCard(String serialNumber);
 
     /**
      * 设备卡删除
@@ -45,4 +44,5 @@ public interface HikService {
      * @return s
      */
     String deleteCard(CardDataDto cardDataDto);
+
 }

@@ -1,10 +1,7 @@
 package com.networkinto.facility.ajHua.service;
 
 import com.networkinto.facility.ajHua.utils.JsonResult;
-import com.networkinto.facility.common.dto.CardDataDto;
-import com.networkinto.facility.common.dto.FacilityDto;
-import com.networkinto.facility.common.dto.HumanFaceDto;
-import com.networkinto.facility.common.dto.InterfaceReturnsDto;
+import com.networkinto.facility.common.dto.*;
 
 import java.util.List;
 
@@ -16,10 +13,10 @@ public interface AjHuaService {
     /**
      * 验证二维码权限
      *
-     * @param qrCode 二维码
+     * @param hikQrCodeDto 二维码
      * @return
      */
-    JsonResult<String> checkQrCode(String qrCode);
+    RemoteCheck  checkQrCode(HikQrCodeDto hikQrCodeDto);
 
     /**
      * 关闭二维码穿透

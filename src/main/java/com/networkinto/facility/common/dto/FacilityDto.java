@@ -40,7 +40,7 @@ public class FacilityDto implements Serializable {
      */
     private String imgUrl;
     /**
-     * 设备类型 0 大华 1 海康
+     * 设备类型 2 大华 1 海康
      */
     private int deviceType;
 }

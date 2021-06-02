@@ -1,21 +1,4 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
-/*
- * HCNetSDK.java
- *
- * Created on 2009-9-14, 19:31:34
- */
-
-/**
- *
- * @author Xubinfeng
- */
-
 package com.networkinto.facility.ahikVision.utils;
-
 import com.sun.jna.*;
 import com.sun.jna.examples.win32.GDI32.RECT;
 import com.sun.jna.examples.win32.W32API;
@@ -29,22 +12,15 @@ import com.sun.jna.win32.StdCallLibrary;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-
-//    public static String sdk_path="F:\\work\\2020\\zlzn\\server\\target\\classes\\HCNetSDK\\";
-//
-//
-//    HCNetSDK INSTANCE = (HCNetSDK) Native.loadLibrary(HCNetSDK.sdk_path+"HCNetSDK.dll", HCNetSDK.class);
-
-
+/**
+ *
+ * @author Xubinfeng
+ */
 public interface HCNetSDK extends StdCallLibrary {
-
     public static String sdk_path= "C:\\hk_lib_2\\";
-
     HCNetSDK INSTANCE = (HCNetSDK) Native.loadLibrary(HCNetSDK.sdk_path+"HCNetSDK.dll", HCNetSDK.class);
     /***宏定义***/
     //常量
-
     public static final int MAX_NAMELEN = 16;	//DVR本地登陆名
     public static final int MAX_RIGHT = 32;	//设备支持的权限（1-12表示本地权限，13-32表示远程权限）
     public static final int NAME_LEN = 32;    //用户名长度
@@ -7019,14 +6995,17 @@ DVR实现巡航数据结构
         public byte[] byRes= new byte[23];
     }
 
-    public static class BYTE_ARRAY extends Structure
+    class BYTE_ARRAY extends Structure
     {
         public byte[] byValue;
 
         public BYTE_ARRAY(byte[] iLen) {
+            byValue=new byte[iLen.length];
             byValue = iLen;
         }
-
+        public BYTE_ARRAY(int iLen) {
+            byValue = new byte[iLen];
+        }
         @Override
         protected List<String> getFieldOrder() {
             // TODO Auto-generated method stub
@@ -7034,7 +7013,7 @@ DVR实现巡航数据结构
         }
     }
 
-    public static class CALLBACK_USER extends Structure {
+     class CALLBACK_USER extends Structure {
         public byte[] byDeviceID= new byte[16];
         public byte[] byCardNo= new byte[32];
         public byte[] byDevIP= new byte[16];

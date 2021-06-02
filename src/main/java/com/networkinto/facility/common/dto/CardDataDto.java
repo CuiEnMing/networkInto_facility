@@ -18,7 +18,7 @@ public class CardDataDto {
     /**
      * 卡号
      */
-    private int cardNo;
+    private String cardNo;
     /**
      * 序号
      */

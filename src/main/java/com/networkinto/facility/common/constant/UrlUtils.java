@@ -2,22 +2,23 @@ package com.networkinto.facility.common.constant;
 
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 
 /**
  * @author cuiEnMing
  * @date 2021/5/19 14:36
  */
+@Component
 public class UrlUtils {
     static String urlPrefix = IConst.URL_PREFIX;
     static String symbol = IConst.SYMBOL;
-
     /**
      * 图片转换
      *
@@ -41,6 +42,48 @@ public class UrlUtils {
         }
         bytes = swapStream.toByteArray();
         return bytes;
+    }
+
+    /**
+     * url转file
+     *
+     * @param fileUrl
+     * @return byte[]
+     * @throws IOException
+     */
+    public static File getFileByUrl(String fileUrl) {
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        BufferedOutputStream stream = null;
+        InputStream inputStream = null;
+        File file = null;
+        try {
+            URL imageUrl = new URL(fileUrl);
+            HttpURLConnection conn = (HttpURLConnection) imageUrl.openConnection();
+            conn.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
+            inputStream = conn.getInputStream();
+            byte[] buffer = new byte[1024];
+            int len = 0;
+            while ((len = inputStream.read(buffer)) != -1) {
+                outStream.write(buffer, 0, len);
+            }
+            file = File.createTempFile("file", fileUrl.substring(fileUrl.lastIndexOf("."), fileUrl.length()));
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            stream = new BufferedOutputStream(fileOutputStream);
+            stream.write(outStream.toByteArray());
+        } catch (Exception e) {
+        } finally {
+            try {
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+                if (stream != null) {
+                    stream.close();
+                }
+                outStream.close();
+            } catch (Exception e) {
+            }
+        }
+        return file;
     }
 
     /**
@@ -92,6 +135,20 @@ public class UrlUtils {
     public static String qrCodeUrl(String ip) {
         String port = IConst.qrCode.PORT.getName();
         String url = urlPrefix + ip + symbol + port;
+        return url;
+    }
+
+    /**
+     * 获得本机服务器路径
+     */
+    public static String getServiceInfo() {
+        String hostAddress = "";
+        try {
+            hostAddress = InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        String url = IConst.URL_PREFIX + hostAddress + IConst.SYMBOL ;
         return url;
     }
 }

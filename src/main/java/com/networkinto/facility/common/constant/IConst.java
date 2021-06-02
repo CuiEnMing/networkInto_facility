@@ -14,8 +14,13 @@ public interface IConst {
      * 成功代码
      */
     Integer SUCCEED = 0;
-    Integer ONE = 0;
-    Integer TWO = 0;
+    Integer ONE = 1;
+    Integer TWO = 2;
+    Integer IMG_SIZE = 100;
+    /**
+     * IMG前缀
+     */
+    String IMG_WINDOWS_PREFIX = "D:";
     /**
      * URL前缀
      */
@@ -54,7 +59,12 @@ public interface IConst {
         /**
          * 关闭二维码
          */
-        CLOSE_QRCODE("close_qrcode_push");
+        CLOSE_QRCODE("close_qrcode_push"),
+
+        /**
+         * 海康二维码 /ISAPI/AccessControl/httpRemoteAuthCfg?format=json
+         */
+        HIK_URL("PUT  /ISAPI/AccessControl/httpRemoteAuthCfg?format=json");
         private final String name;
 
         qrCode(String name) {
@@ -73,12 +83,13 @@ public interface IConst {
         /**
          * 项目端口号 （智慧小区）
          */
-        PORT("8080"),
+        //PORT("8091"),
+         PORT("8088"),
         /**
          * 项目对接IP（智慧小区）
          */
-        IP("172.16.11.214"),
-
+        IP("127.0.0.1"),
+        //  IP("170.241.0.24"),
         /**
          * 设备接口路径（智慧小区）
          */

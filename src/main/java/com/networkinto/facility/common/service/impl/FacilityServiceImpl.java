@@ -1,11 +1,14 @@
 package com.networkinto.facility.common.service.impl;
 
+import cn.hutool.extra.cglib.CglibUtil;
 import com.networkinto.facility.ahikVision.module.HikVisionModule;
 import com.networkinto.facility.ajHua.module.AjHuaModule;
 import com.networkinto.facility.common.constant.IConst;
 import com.networkinto.facility.common.constant.PingUtils;
+import com.networkinto.facility.common.dto.FacilityDto;
 import com.networkinto.facility.common.dto.FacilityStatusDto;
 import com.networkinto.facility.common.service.FacilityService;
+import lombok.Getter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -18,6 +21,7 @@ import javax.annotation.Resource;
 @Service("FacilityService")
 public class FacilityServiceImpl implements FacilityService {
     @Resource
+    @Getter
     private RestTemplate restTemplate;
     @Resource
     private AjHuaModule ajHuaModule;
@@ -40,8 +44,9 @@ public class FacilityServiceImpl implements FacilityService {
                     facilityStatusDto.setStatus(IConst.TWO);
                 }
             } else if (IConst.ONE == facilityStatusDto.getType()) {
-                if (!hikVisionModule.login(facilityStatusDto.getIp(), facilityStatusDto.getPort(), facilityStatusDto.getAccount(),
-                        facilityStatusDto.getPassword(), facilityStatusDto.getSerialNumber())) {
+                FacilityDto facilityDto = new FacilityDto();
+                CglibUtil.copy(facilityStatusDto, facilityDto);
+                if (!hikVisionModule.login(facilityDto)) {
                     //设备登录失败
                     facilityStatusDto.setStatus(IConst.TWO);
                 }

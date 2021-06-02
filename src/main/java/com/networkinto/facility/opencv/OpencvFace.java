@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  * @date 2021/5/17 17:44
  */
 @Log4j2
-@Component
+//@Component
 public class OpencvFace {
     private CascadeClassifier faceDetector;
 
@@ -47,13 +47,13 @@ public class OpencvFace {
         for (Rect rect : faceDetections.toArray()) {
             Mat sub = inMat.submat(rect);
             Mat mat = new Mat();
-            Size size = new Size(1000, 1000);
+            Size size = new Size(750, 750);
             //将人脸进行截图并保存
             Imgproc.resize(sub, mat, size);
-            Imgcodecs.imwrite("D:/FaceDetect/temp//test1" + ".jpg", mat);
-            MatOfByte matb = new MatOfByte(mat);
-            bates = matb.toArray();
-
+            Imgcodecs.imwrite("D:/FaceDetect/test1" + ".jpg", mat);
+            MatOfByte mb=new MatOfByte();
+            Imgcodecs.imencode(".jpg", mat, mb);
+            bates = mb.toArray();
         }
         return bates;
     }

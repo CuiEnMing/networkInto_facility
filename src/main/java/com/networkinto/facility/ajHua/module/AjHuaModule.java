@@ -21,8 +21,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
@@ -38,10 +36,10 @@ import java.util.concurrent.locks.ReentrantLock;
 public class AjHuaModule {
     @Resource
     private RestTemplate restTemplate;
-    @Value("${server.port}")
-    private int serverPort;
     @Resource
     private ToolKits toolKits;
+    @Value("${server.port}")
+    private int serverPort;
     /**
      * 设备与句柄的映射关系
      */
@@ -199,27 +197,18 @@ public class AjHuaModule {
      * @since 2021/4/26 9:35
      */
     public void qrCode(FacilityDto facilityDto) {
-        String hostAddress = "";
-        REENTRANT_LOCK.lock();
-        try {
-            //项目部署环境ip
-            hostAddress = InetAddress.getLocalHost().getHostAddress();
-        } catch (UnknownHostException e) {
-            log.error("获取本机ip失败");
-            e.printStackTrace();
-        } finally {
-            REENTRANT_LOCK.unlock();
-        }
         //组装传输数据
-        String finalHostAddress = hostAddress;
         Runnable runnable = () -> {
-            String url = IConst.URL_PREFIX + finalHostAddress + IConst.SYMBOL + serverPort + "/facilityDto/manage/" + facilityDto.getSerialNumber() + "/QR_CODE";
+          //  String url = UrlUtils.getServiceInfo() +serverPort+ "/aj/hua/" + facilityDto.getSerialNumber() + "/QR_CODE";
+
+            String url = UrlUtils.wisdomCommunityUrl()+"/business/lltQrCode/"+ facilityDto.getSerialNumber() + "/QR_CODE";
             // val 设备序列号  val1 接受二维码 的接口
             Map<Object, Object> objectObjectMap = qrCodeParams(facilityDto.getSerialNumber(), url, IConst.qrCode.OPEN_QRCODE.getName());
+            log.info(url);
             handleMap.put(facilityDto.getSerialNumber(), m_hLoginHandle);
             try {
                 //设备接口路径
-                String qrCodeUrl = UrlUtils.qrCodeUrl(facilityDto.getIp()) + IConst.qrCode.URL;
+                String qrCodeUrl = UrlUtils.qrCodeUrl(facilityDto.getIp()) + IConst.qrCode.URL.getName();
                 log.info("url :" + qrCodeUrl);
                 InterfaceReturnsDto interfaceReturnsDto = restTemplate.postForObject(qrCodeUrl, objectObjectMap, InterfaceReturnsDto.class);
                 if (IConst.SUCCEED.equals(interfaceReturnsDto.getCode())) {

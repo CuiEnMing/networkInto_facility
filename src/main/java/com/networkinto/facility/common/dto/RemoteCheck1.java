@@ -6,16 +6,12 @@ import lombok.NoArgsConstructor;
 
 /**
  * @author cuiEnMing
- * @Desc 外部接口
+ * @date 2021/5/26 14:53
  */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class InterfaceReturnsDto {
-    /**
-     * 0成功
-     */
-    private Integer code;
-    private String message;
-    private String data;
+public class RemoteCheck1 {
+    private RemoteCheck RemoteCheck = new RemoteCheck();
+
 }

@@ -11,10 +11,7 @@ import com.networkinto.facility.ajHua.utils.NetSDKLib;
 import com.networkinto.facility.ajHua.utils.ToolKits;
 import com.networkinto.facility.common.constant.IConst;
 import com.networkinto.facility.common.constant.UrlUtils;
-import com.networkinto.facility.common.dto.CardDataDto;
-import com.networkinto.facility.common.dto.FacilityDto;
-import com.networkinto.facility.common.dto.HumanFaceDto;
-import com.networkinto.facility.common.dto.InterfaceReturnsDto;
+import com.networkinto.facility.common.dto.*;
 import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
@@ -25,8 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
-import java.nio.charset.StandardCharsets;
+import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,32 +54,46 @@ public class AjHuaServiceImpl implements AjHuaService {
     /**
      * 验证二维码权限
      *
-     * @param qrCode 二维码
+     * @param hikQrCodeDto 二维码
      * @return JsonResult
      */
     @Override
-    public JsonResult<String> checkQrCode(String qrCode) {
+    public RemoteCheck checkQrCode(HikQrCodeDto hikQrCodeDto) {
+        RemoteCheck remoteCheck = new RemoteCheck();
         String res = HttpUtil.createPost(IConst.URL_PREFIX + IConst.qrCode.ROAD_SERVICE.getName() + IConst.qrCode.CHECK_CODE.getName())
                 .setMethod(Method.POST)
                 .contentType("application/x-www-form-urlencoded")
-                .form("qrcode", qrCode)
+                .form("qrcode", hikQrCodeDto.getQrCode())
                 .form("casecode", "1")
                 .form("casename", "1")
                 .form("description", "1")
                 .timeout(5000)
                 .execute()
                 .body();
-
         JsonObject asJsonObject = new JsonParser().parse(res).getAsJsonObject();
         int code = asJsonObject.get("code").getAsInt();
         String message = asJsonObject.get("message").getAsString();
         //路路通返回结果 1成功
         Integer result = 1;
         if (result.equals(code)) {
+            remoteCheck.setCheckResult("success");
             //todo  验证通过需存储用户出行轨迹
-            return JsonResult.ok(message, "");
+            JsonObject data = asJsonObject.get("data").getAsJsonObject();
+            String name = data.get("name").toString().replaceAll("\"", "");
+            String mobile = data.get("mobile").toString().replaceAll("\"", "");
+            LocalDateTime time = LocalDateTime.now();
+            String format = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            EventDto eventDto = new EventDto();
+            eventDto.setEventtime(format);
+            eventDto.setName(name);
+            eventDto.setMobile(mobile);
+            eventDto.setSn(hikQrCodeDto.getSn());
+            eventDto.setCheckType(1);
+        } else {
+            remoteCheck.setCheckResult("failed");
         }
-        return JsonResult.error(message, "", code);
+        remoteCheck.setSerialNo(Integer.parseInt(hikQrCodeDto.getSerialNo()));
+        return remoteCheck;
     }
 
     /**
@@ -127,6 +139,16 @@ public class AjHuaServiceImpl implements AjHuaService {
         byte[] userID = uuID.getBytes();
         String cardId = dto.getCardNo().toString();
         byte[] cardNo = cardId.getBytes();
+        List<CardDataDto> list = queryCard(dto.getSerialNumber());
+        if (IConst.SUCCEED < list.size()) {
+            for (CardDataDto cardDataDto : list) {
+                if (String.valueOf(cardDataDto.getCardNo()).equals(cardId)) {
+                    deleteCard(cardDataDto);
+                    log.info("{}卡号删除 重新下发", cardId);
+                    deleteFaceInfo(cardDataDto.getUserId(), cardDataDto.getSerialNumber());
+                }
+            }
+        }
         //获得对于句柄
         NetSDKLib.LLong lLong = ajHuaModule.getHandleMap().get(dto.getSerialNumber());
         NetSDKLib.NET_RECORDSET_ACCESS_CTL_CARD card = new NetSDKLib.NET_RECORDSET_ACCESS_CTL_CARD();
@@ -134,7 +156,21 @@ public class AjHuaServiceImpl implements AjHuaService {
         System.arraycopy(cardNo, 0, card.szCardNo, 0, cardNo.length);
         card.nDoorNum = 1;
         card.sznDoors[0] = 0;
-        card.szCardName = fileName.getBytes(StandardCharsets.UTF_8);
+        try {
+            card.szCardName = fileName.getBytes("GBK");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        NetSDKLib.NET_TIME startTime = new NetSDKLib.NET_TIME();
+        startTime.setTime(dto.getStartTime().getYear(),
+                dto.getStartTime().get(ChronoField.MONTH_OF_YEAR), dto.getStartTime().getDayOfMonth(),
+                dto.getStartTime().getHour(), dto.getStartTime().getMinute(), dto.getExpiresTime().getSecond());
+        NetSDKLib.NET_TIME endTime = new NetSDKLib.NET_TIME();
+        endTime.setTime(dto.getExpiresTime().getYear(),
+                dto.getExpiresTime().get(ChronoField.MONTH_OF_YEAR), dto.getExpiresTime().getDayOfMonth(),
+                dto.getExpiresTime().getHour(), dto.getExpiresTime().getMinute(), dto.getExpiresTime().getSecond());
+        card.stuValidStartTime = startTime;
+        card.stuValidEndTime = endTime;
         NetSDKLib.NET_CTRL_RECORDSET_INSERT_PARAM inParam = new NetSDKLib.NET_CTRL_RECORDSET_INSERT_PARAM();
         inParam.stuCtrlRecordSetInfo.emType = NetSDKLib.EM_NET_RECORD_TYPE.NET_RECORD_ACCESSCTLCARD;
         inParam.stuCtrlRecordSetInfo.nBufLen = card.size();
@@ -163,8 +199,6 @@ public class AjHuaServiceImpl implements AjHuaService {
         //增加人脸图片
         if (fileBytes.length > IConst.SUCCEED) {
             NetSDKLib.NET_IN_ADD_FACE_INFO inAddFaceInfo = new NetSDKLib.NET_IN_ADD_FACE_INFO();
-            NetSDKLib.NET_TIME startTime = setNetTime(dto.getStartTime());
-            NetSDKLib.NET_TIME endTime = setNetTime(dto.getExpiresTime());
             System.arraycopy(userID, 0, inAddFaceInfo.szUserID, 0, userID.length);
             inAddFaceInfo.stuFaceInfo.nFacePhoto = 1;
             inAddFaceInfo.stuFaceInfo.nFacePhotoLen[0] = (int) new Memory(fileBytes.length).getSize();
@@ -186,6 +220,7 @@ public class AjHuaServiceImpl implements AjHuaService {
                 log.error("添加用户人脸信息时 发生异常 异常原因{}", errorCodeShow);
                 dto.setNoNum(dto.getNoNum() + 1);
                 dto.setDfaceStatus(-1);
+                dto.setCardStatus(-1);
                 if (StringUtil.isNotBlank(dto.getFailRemark())) {
                     dto.setFailRemark(dto.getFailRemark() + "," + toolKits.getErrorCodeShow());
                 } else {
@@ -285,7 +320,8 @@ public class AjHuaServiceImpl implements AjHuaService {
                 card.bEnableExtended = 1;
                 card.stuFingerPrintInfoEx.nPacketLen = 2048;
                 card.stuFingerPrintInfoEx.pPacketData = new Memory(2048);
-                cardDataDto.setCardNo(Integer.parseInt(new String(card.szCardNo).trim()));
+                String trim = new String(card.szCardNo).trim();
+                cardDataDto.setCardNo(trim);
                 cardDataDto.setRecNo(card.nRecNo);
                 cardDataDto.setUserId(new String(card.szUserID).trim());
                 cardDataDto.setSerialNumber(serialNumber);
@@ -307,9 +343,10 @@ public class AjHuaServiceImpl implements AjHuaService {
      * false:存在
      *
      * @param serialNumber
+     * @param cardDataDto
      * @return
      */
-    public boolean checkCardNo(byte[] cardNo, String serialNumber) {
+    public boolean checkCardNo(byte[] cardNo, String serialNumber, CardDataDto cardDataDto) {
         if (cardNo.length == 0) {
             return false;
         }
@@ -353,5 +390,36 @@ public class AjHuaServiceImpl implements AjHuaService {
         //停止查询
         ajHuaModule.netsdk.CLIENT_FindRecordClose(outParam.lFindeHandle);
         return true;
+    }
+
+    /**
+     * 删除人脸(单个删除)
+     *
+     * @param userId 用户ID
+     */
+    public boolean deleteFaceInfo(String userId, String serialNumber) {
+        int emType = NetSDKLib.EM_FACEINFO_OPREATE_TYPE.EM_FACEINFO_OPREATE_REMOVE;
+
+        /**
+         * 入参
+         */
+        NetSDKLib.NET_IN_REMOVE_FACE_INFO inRemove = new NetSDKLib.NET_IN_REMOVE_FACE_INFO();
+
+        // 用户ID
+        System.arraycopy(userId.getBytes(), 0, inRemove.szUserID, 0, userId.getBytes().length);
+
+        /**
+         *  出参
+         */
+        NetSDKLib.NET_OUT_REMOVE_FACE_INFO outRemove = new NetSDKLib.NET_OUT_REMOVE_FACE_INFO();
+        inRemove.write();
+        outRemove.write();
+        boolean bRet = ajHuaModule.netsdk.CLIENT_FaceInfoOpreate(ajHuaModule.getHandleMap().get(serialNumber), emType, inRemove.getPointer(), outRemove.getPointer(), 5000);
+        inRemove.read();
+        outRemove.read();
+        if (!bRet) {
+            log.error("删除人脸失败 ， 失败原因{}", toolKits.getErrorCodeShow());
+        }
+        return bRet;
     }
 }

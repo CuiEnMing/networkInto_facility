@@ -10,7 +10,6 @@
     </parent>
     <groupId>com.networkInto.facility</groupId>
     <artifactId>networkInto</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
     <name>networkInto_facility</name>
     <description>Demo project for Spring Boot</description>
     <properties>
@@ -29,7 +28,8 @@
             <artifactId>opencv</artifactId>
             <version>4.0.1</version>
             <scope>system</scope>
-            <systemPath>${basedir}/lib/opencv-401.jar</systemPath>
+            <systemPath>${project.basedir}/lib/opencv-401.jar</systemPath>
+            <!--mvn install:install-file -DgroupId=org.opencv -DartifactId=opencv -Dversion=4.0.1 -Dpackaging=jar -Dfile=E:\code\networkInto_facility\lib\opencv-401.jar-->
         </dependency>
         <!-- jna -->
         <dependency>
@@ -39,7 +39,7 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/examples.jar</systemPath>
         </dependency>
-
+        <!--mvn install:install-file -DgroupId=com.sun.jna.examples -DartifactId=examples -Dversion=1.0 -Dpackaging=jar -Dfile=E:\code\networkInto_facility\lib\examples.jar-->
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
@@ -51,7 +51,6 @@
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
             <version>2.2.1.RELEASE</version>
         </dependency>
-
         <!-- https://mvnrepository.com/artifact/com.alibaba.boot/nacos-config-spring-boot-starter -->
         <dependency>
             <groupId>com.alibaba.boot</groupId>
@@ -63,12 +62,6 @@
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.8.2</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>3.4</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -110,6 +103,12 @@
             <artifactId>log4j-core</artifactId>
             <version>2.13.3</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.4</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
@@ -124,11 +123,7 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-context-support</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -146,6 +141,11 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>io.springfox</groupId>
             <artifactId>springfox-swagger2</artifactId>
             <version>2.4.0</version>
@@ -161,13 +161,40 @@
             <artifactId>hibernate-validator</artifactId>
             <version>6.1.5.Final</version>
         </dependency>
-    </dependencies>
+        <!-- mq -->
+        <dependency>
+            <groupId>org.apache.rocketmq</groupId>
+            <artifactId>rocketmq-spring-boot-starter</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>RELEASE</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>5.6.6</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/cglib/cglib -->
+        <dependency>
+            <groupId>cglib</groupId>
+            <artifactId>cglib</artifactId>
+            <version>3.3.0</version>
+        </dependency>
 
+    </dependencies>
     <build>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>2.3.10.RELEASE</version>
+                <configuration>
+                    <includeSystemScope>true</includeSystemScope>
+                </configuration>
             </plugin>
         </plugins>
         <resources>
@@ -176,6 +203,13 @@
                 <targetPath>/BOOT-INF/lib/</targetPath>
                 <includes>
                     <include>**/*.jar</include>
+                    <include>**/*.yml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*.yml</include>
                 </includes>
             </resource>
         </resources>
